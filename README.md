@@ -28,6 +28,21 @@ cronogramas, anulações, liquidações, ordens bancárias, retenções e guias.
 
 ## Uso diário
 
+### Opção 1 — Programa com janela (recomendado)
+
+Baixe o **`GestaoFinBID.exe`** na página de
+[Releases](../../releases/tag/executavel) do repositório, abra, cole a
+connection string do Supabase (só na primeira vez — fica salva) e clique em
+**"Selecionar zips e carregar..."**. Pronto: escolha o(s) zip(s) do dia e
+acompanhe o progresso na janela.
+
+O executável é gerado pelo GitHub Actions (workflow *"Gerar executável
+(Windows)"* — aba Actions → Run workflow, quando quiser atualizar). Quem
+tiver Python instalado também pode abrir a janela com
+`python ingest/app.py`.
+
+### Opção 2 — Linha de comando
+
 Chegou o zip do dia? Rode:
 
 ```bash

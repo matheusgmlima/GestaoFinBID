@@ -1,0 +1,43 @@
+name: Gerar executável (Windows)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r ingest/requirements.txt pyinstaller
+
+      - name: Gerar executável
+        run: >
+          pyinstaller --onefile --windowed --name GestaoFinBID
+          --collect-all psycopg --collect-all psycopg_binary
+          ingest/app.py
+
+      - name: Guardar artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestaoFinBID-windows
+          path: dist/GestaoFinBID.exe
+
+      - name: Publicar na release "executavel"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: executavel
+          name: GestaoFinBID — Executável (Windows)
+          body: >
+            Programa de carga dos zips diários de empenhos para o Supabase.
+            Baixe o GestaoFinBID.exe abaixo, abra, cole a connection string do
+            Supabase (uma vez só) e selecione os zips do dia.
+          files: dist/GestaoFinBID.exe
