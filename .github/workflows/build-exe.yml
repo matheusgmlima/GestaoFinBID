@@ -24,6 +24,7 @@ jobs:
           pyinstaller --onefile --windowed --name GestaoFinBID
           --collect-all psycopg --collect-all psycopg_binary --collect-all openpyxl
           --paths ingest
+          --add-data "supabase/migrations;migrations"
           ingest/app.py
 
       - name: Guardar artefato

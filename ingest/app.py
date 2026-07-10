@@ -15,6 +15,7 @@ from tkinter import filedialog, messagebox, scrolledtext
 
 import ingest
 import import_classificacao
+import schema
 
 # a connection string fica salva no perfil do usuário após a primeira carga
 CONFIG = Path.home() / ".gestaofinbid.conf"
@@ -151,6 +152,8 @@ class App:
             print(f"Lendo a planilha de classificação...\n  {caminho}\n")
             print("Conectando ao Supabase...")
             with ingest.psycopg.connect(url) as conn:
+                print("Verificando a estrutura do banco...")
+                schema.garantir_schema(conn)
                 n = import_classificacao.importar_classificacao(conn, caminho)
             msg = (f"Planilha de classificação atualizada!\n\n"
                    f"{n} linhas carregadas em classificacao_orcamentaria.")
@@ -177,6 +180,8 @@ class App:
                 return
             print("Conectando ao Supabase...")
             with ingest.psycopg.connect(url) as conn:
+                print("Verificando a estrutura do banco...")
+                schema.garantir_schema(conn)
                 total = ingest.processar(conn, arquivos)
             resumo = (f"Concluído!\n\n"
                       f"Arquivos carregados: {total['arquivos']}\n"

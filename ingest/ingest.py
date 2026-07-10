@@ -517,7 +517,9 @@ def main():
     if psycopg is None:
         sys.exit("Instale as dependências: pip install -r ingest/requirements.txt")
 
+    import schema
     with psycopg.connect(db_url) as conn:
+        schema.garantir_schema(conn)
         total = processar(conn, arquivos)
 
     print(

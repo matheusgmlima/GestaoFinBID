@@ -12,22 +12,25 @@ cronogramas, anulações, liquidações, ordens bancárias, retenções e guias.
 
 ## Configuração (uma vez só)
 
-1. **Criar as tabelas**: no painel do Supabase, abra *SQL Editor* e execute,
-   nesta ordem, o conteúdo de
-   [`supabase/migrations/0001_empenhos_schema.sql`](supabase/migrations/0001_empenhos_schema.sql)
-   e depois de
-   [`supabase/migrations/0002_classificacao_orcamentaria.sql`](supabase/migrations/0002_classificacao_orcamentaria.sql)
-   (este cria a tabela de Ações/Subações e o vínculo com os empenhos).
+**As tabelas são criadas automaticamente** na primeira vez que o programa
+conecta no Supabase — você não precisa mexer no SQL Editor. Basta ter o
+projeto criado e a connection string em mãos (painel do Supabase →
+**Connect** → *Session pooler* / URI; a senha é a definida na criação do
+projeto).
 
-2. **Instalar o cliente** (Python 3.9+):
+> Se preferir criar as tabelas manualmente (ou revisar o schema), os
+> arquivos estão em
+> [`supabase/migrations/`](supabase/migrations/) — rode `0001` e depois
+> `0002` no *SQL Editor*. Não é obrigatório: o programa aplica as mesmas
+> migrações sozinho, e elas são idempotentes (rodar de novo não duplica nada).
 
-   ```bash
-   pip install -r ingest/requirements.txt
-   ```
+Para usar por linha de comando (opcional), instale o cliente (Python 3.9+) e
+configure o `.env`:
 
-3. **Configurar a conexão**: copie `.env.example` para `.env` e preencha com
-   a connection string do projeto (painel do Supabase → **Connect** →
-   *Session pooler* / URI). A senha é a definida na criação do projeto.
+```bash
+pip install -r ingest/requirements.txt
+cp .env.example .env   # e preencha SUPABASE_DB_URL
+```
 
 ## Uso diário
 
