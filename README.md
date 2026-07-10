@@ -12,9 +12,12 @@ cronogramas, anulações, liquidações, ordens bancárias, retenções e guias.
 
 ## Configuração (uma vez só)
 
-1. **Criar as tabelas**: no painel do Supabase, abra *SQL Editor*, cole o
-   conteúdo de [`supabase/migrations/0001_empenhos_schema.sql`](supabase/migrations/0001_empenhos_schema.sql)
-   e execute.
+1. **Criar as tabelas**: no painel do Supabase, abra *SQL Editor* e execute,
+   nesta ordem, o conteúdo de
+   [`supabase/migrations/0001_empenhos_schema.sql`](supabase/migrations/0001_empenhos_schema.sql)
+   e depois de
+   [`supabase/migrations/0002_classificacao_orcamentaria.sql`](supabase/migrations/0002_classificacao_orcamentaria.sql)
+   (este cria a tabela de Ações/Subações e o vínculo com os empenhos).
 
 2. **Instalar o cliente** (Python 3.9+):
 
@@ -35,6 +38,10 @@ Baixe o **`GestaoFinBID.exe`** na página de
 connection string do Supabase (só na primeira vez — fica salva) e clique em
 **"Selecionar zips e carregar..."**. Pronto: escolha o(s) zip(s) do dia e
 acompanhe o progresso na janela.
+
+O mesmo programa tem o botão **"Atualizar planilha de Ações/Subações
+(classificação)..."** — use quando a planilha de classificação mudar
+(normalmente uma vez por ano); ela recarrega a tabela de classificação.
 
 O executável é gerado pelo GitHub Actions (workflow *"Gerar executável
 (Windows)"* — aba Actions → Run workflow, quando quiser atualizar). Quem
@@ -72,6 +79,12 @@ Para só inspecionar o que seria carregado, sem gravar:
 python ingest/ingest.py --dry-run caminho/para/o.zip
 ```
 
+Para atualizar a planilha de classificação pela linha de comando:
+
+```bash
+python ingest/import_classificacao.py "Descrição das Ações e Subações - 2026.xlsx"
+```
+
 ## O que vai para o banco
 
 | Tabela | Origem | Conteúdo |
@@ -88,6 +101,8 @@ python ingest/ingest.py --dry-run caminho/para/o.zip
 | `retencoes` | RN | Retenções (INSS, ISS...) por OB/NE |
 | `guias_recolhimento` | GR | Guias de recolhimento (UG 070001) |
 | `arquivos_processados` | — | Controle de carga (idempotência) |
+| `classificacao_orcamentaria` | planilha | Catálogo de Ações/Subações/Setores |
+| `vw_empenhos_classificados` | view | Empenhos com o setor já resolvido |
 
 Consultas típicas:
 
@@ -100,7 +115,20 @@ from empenhos where numero_ne = '2025NE000123';
 select numero_ob, data_emissao, valor, status
 from ordens_bancarias where credor_doc = '00000000000000'
 order by data_emissao;
+
+-- Empenhos por setor (só os que a classificação resolve automaticamente)
+select setor, count(*), sum(valor)
+from vw_empenhos_classificados
+where exercicio = 2026 and setor is not null
+group by setor order by 3 desc;
 ```
+
+> **Sobre a classificação por setor:** o empenho traz Fonte, Ação e Subação
+> Real; o setor (Subação Virtual) só existe na planilha. Onde uma subação
+> real corresponde a um único setor, ele é preenchido automaticamente. Onde
+> ela se abre em vários (o caso da Ação 4430 / Subação 1439), o empenho fica
+> como *não classificado* (`setor` nulo) até se definir uma regra de rateio.
+> Detalhes na seção 7 de [`docs/ANALISE_ARQUIVOS.md`](docs/ANALISE_ARQUIVOS.md).
 
 As tabelas têm RLS habilitado sem policies: só o *service role* (e a conexão
 direta usada pela carga) acessa. Para liberar leitura no app/dashboard, crie

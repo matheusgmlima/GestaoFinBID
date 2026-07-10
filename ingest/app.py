@@ -14,6 +14,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext
 
 import ingest
+import import_classificacao
 
 # a connection string fica salva no perfil do usuário após a primeira carga
 CONFIG = Path.home() / ".gestaofinbid.conf"
@@ -74,6 +75,13 @@ class App:
                                    command=self.escolher_pasta, height=2)
         self.btn_pasta.pack(side="left", expand=True, fill="x", padx=(4, 0))
 
+        extra = tk.Frame(root, padx=10)
+        extra.pack(fill="x", pady=(0, 4))
+        self.btn_planilha = tk.Button(
+            extra, text="Atualizar planilha de Ações/Subações (classificação)...",
+            command=self.escolher_planilha)
+        self.btn_planilha.pack(fill="x")
+
         self.log = scrolledtext.ScrolledText(root, state="disabled", height=20,
                                              font=("Consolas", 9))
         self.log.pack(fill="both", expand=True, padx=10, pady=(4, 10))
@@ -96,24 +104,64 @@ class App:
         if pasta:
             self.iniciar([pasta])
 
-    def iniciar(self, caminhos):
+    def escolher_planilha(self):
+        caminho = filedialog.askopenfilename(
+            title="Selecione a planilha de Ações/Subações",
+            filetypes=[("Planilha Excel", "*.xlsx"), ("Todos os arquivos", "*.*")],
+        )
+        if caminho:
+            self.iniciar_planilha(caminho)
+
+    def _preparar(self):
+        """Valida a conexão e bloqueia os botões. Devolve a URL ou None."""
         if self.rodando:
-            return
+            return None
         url = self.url.get().strip()
         if not url.startswith("postgres"):
             messagebox.showwarning(
                 "Conexão", "Preencha a connection string do Supabase primeiro\n"
                 "(painel do Supabase → Connect → Session pooler → URI).")
-            return
+            return None
         if ingest.psycopg is None:
             messagebox.showerror("Dependência", "O driver do banco (psycopg) não está instalado.")
-            return
+            return None
         salvar_url(url)
         self.rodando = True
-        self.btn_zips.config(state="disabled")
-        self.btn_pasta.config(state="disabled")
+        for b in (self.btn_zips, self.btn_pasta, self.btn_planilha):
+            b.config(state="disabled")
         self.limpar_log()
-        threading.Thread(target=self.trabalhar, args=(url, caminhos), daemon=True).start()
+        return url
+
+    def iniciar(self, caminhos):
+        url = self._preparar()
+        if url:
+            threading.Thread(target=self.trabalhar, args=(url, caminhos), daemon=True).start()
+
+    def iniciar_planilha(self, caminho):
+        url = self._preparar()
+        if url:
+            threading.Thread(target=self.trabalhar_planilha, args=(url, caminho),
+                             daemon=True).start()
+
+    def trabalhar_planilha(self, url, caminho):
+        saida = EscritorFila(self.fila)
+        sys.stdout = saida
+        sys.stderr = saida
+        try:
+            print(f"Lendo a planilha de classificação...\n  {caminho}\n")
+            print("Conectando ao Supabase...")
+            with ingest.psycopg.connect(url) as conn:
+                n = import_classificacao.importar_classificacao(conn, caminho)
+            msg = (f"Planilha de classificação atualizada!\n\n"
+                   f"{n} linhas carregadas em classificacao_orcamentaria.")
+            print("\n" + msg)
+            self.fila.put(("fim", msg))
+        except Exception as e:  # noqa: BLE001
+            print(f"\n[ERRO] {e}")
+            self.fila.put(("erro", f"A importação da planilha falhou:\n\n{e}"))
+        finally:
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
 
     def trabalhar(self, url, caminhos):
         saida = EscritorFila(self.fila)
@@ -152,8 +200,8 @@ class App:
                 if isinstance(item, tuple):
                     tipo, msg = item
                     self.rodando = False
-                    self.btn_zips.config(state="normal")
-                    self.btn_pasta.config(state="normal")
+                    for b in (self.btn_zips, self.btn_pasta, self.btn_planilha):
+                        b.config(state="normal")
                     if tipo == "erro":
                         messagebox.showerror("GestaoFinBID", msg)
                     else:

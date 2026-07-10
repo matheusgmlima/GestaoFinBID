@@ -59,11 +59,14 @@ não empenhos); o pipeline os ignora e informa no log.
 
 ### 3.1 Arquivos GFU (NE, LE, anulações): janela móvel de 3 meses
 
-Cada arquivo diário **não é incremental nem acumulado**: é um **recorte dos
-documentos cuja última alteração ocorreu nos últimos 3 meses** (contados da
-data de geração, com dados até o fim do dia anterior). Verificado nos 10
-dias analisados — o menor e o maior `atualizado_em` de cada arquivo batem
-exatamente com a janela `[D-3 meses, D-1]`:
+Cada arquivo diário **não é incremental nem acumulado**, e **não é "de dois
+anos pra cá" nem "desde o início do ano passado"**: é um **recorte dos
+documentos cuja última alteração ocorreu nos últimos 3 meses de calendário**
+(contados da data de geração, com dados até o fim do dia anterior). A janela
+é definida pela **data da última movimentação** (campo `atualizado_em`), não
+pela data de emissão. Verificado em 12 dias de extração (2025 e 2026) — o
+menor `atualizado_em` de cada arquivo cai exatamente 3 meses antes da
+geração:
 
 | Pasta | Janela observada no NEDG |
 |---|---|
@@ -72,6 +75,24 @@ exatamente com a janela `[D-3 meses, D-1]`:
 | 28/07/2025 | 28/04/2025 → 25/07/2025 |
 | 28/11/2025 | 28/08/2025 → 27/11/2025 |
 | 19/12/2025 | 19/09/2025 → 18/12/2025 |
+| 18/06/2026 | 18/03/2026 → 17/06/2026 |
+| 09/07/2026 | 09/04/2026 → 08/07/2026 |
+
+**Por que às vezes parece "desde o ano passado".** No começo do ano a janela
+de 3 meses atravessa a virada: o envio de 26/02/2025 alcançava novembro/2024,
+então trazia empenhos de **2024 e 2025** juntos (restos a pagar ainda em
+movimento). Isso dá a impressão de "tudo desde o ano passado", mas é só a
+janela cruzando o Ano Novo. Prova: os envios de **junho e julho/2026 têm
+apenas empenhos de 2026** no NEDG — nenhum de 2025 —, porque em meados do ano
+a janela já não alcança mais o exercício anterior.
+
+**Os pagamentos ainda apontam para empenhos que sumiram.** No envio de
+09/07/2026, o arquivo de OB traz **676 ordens bancárias de 2026 quitando
+empenhos `2025NE`** — empenhos que já não estão no NEDG de 2026 (foram
+emitidas quase todas em janeiro/2026, restos a pagar). É a prova concreta de
+que **acumular e nunca apagar é obrigatório**: quem só olhasse o arquivo do
+dia teria pagamentos órfãos; como a base guardou os empenhos de 2025 das
+cargas anteriores, o vínculo se mantém.
 
 Consequências práticas:
 
@@ -157,7 +178,62 @@ Nomeadas por evidência, mas vale confirmar com o setor/e-Fisco:
 
 * A pasta `13.0.2025` (zip de 17/06) tem o nome truncado — seria 13/06. O
   pipeline não depende do nome da pasta: usa a data de geração do cabeçalho.
+* Os zips de 2026 vêm com **uma única pasta datada** (os de 2025 vinham com
+  duas). O pipeline lida com os dois formatos.
 * Alguns dias não têm arquivo (fins de semana/feriados); o batch roda em
   dias úteis.
 * O trailer de cada arquivo é conferido com a contagem real; divergências
   geram aviso no log (não bloqueiam a carga).
+
+## 7. Classificação orçamentária (Ações / Subações / Setores)
+
+Fonte: planilha **"Descrição das Ações e Subações"** (mantida pelo setor).
+Liga cada empenho a uma Ação, Subação e, quando possível, ao Setor.
+
+### 7.1 Onde a classificação está no empenho
+
+A `funcional_programatica` do empenho tem **17 dígitos** decodificados assim:
+
+```
+função(2) + subfunção(3) + programa(4) + AÇÃO(4) + SUBAÇÃO(4)
+02122 0422 4430 1439   ->  ação 4430, subação 1439
+02061 0577 4428 A585   ->  ação 4428, subação A585   (subação pode ser alfanumérica)
+```
+
+E a **fonte** são os 4 primeiros dígitos de `fonte_recurso` (`0759240000` →
+`0759`). A migração `0002` cria colunas **geradas** `acao`, `subacao` e
+`fonte_codigo` nos empenhos, extraídas automaticamente desses campos.
+
+### 7.2 O empenho tem a Subação REAL; o Setor (Subação Virtual) só na planilha
+
+A planilha tem cinco colunas: Fonte, Ação, **Subação Real**, **Subação
+Virtual** e Descrição (o setor, ex.: "Assessoria de Comunicação"). O empenho
+carrega **apenas a Subação Real** — a Subação Virtual (o setor fino) **não
+existe no e-Fisco**, é uma camada interna do TJPE. Conferido: os códigos
+virtuais (A594, A570, A644…) nunca aparecem em nenhum arquivo de empenho.
+
+Consequência (decisão de negócio adotada — "ligar até a subação real"):
+
+* Quando `(ação, subação real)` aponta para **uma única descrição**, o setor
+  é resolvido automaticamente. Vale para a maioria dos grupos.
+* Quando a subação real se abre em **vários setores**, o empenho fica com
+  **setor = NULL ("não classificado")**. O caso principal é
+  **Ação 4430 / Subação 1439** — o maior balde (~44% dos empenhos) — que se
+  abre em 7 setores (Comunicação, Cerimonial, SAD, DIMAN, DIPAT, Apoio
+  Administrativo, Corregedoria). Também 3537/0000 (FUNSEG vs Suporte
+  Segurança) e 4728/0000. Refinar o setor desses exige uma regra/fonte
+  adicional ou atribuição manual — a definir.
+* **Ação 2596 / Subação 1975** aparece nos empenhos mas **não está na
+  planilha** (fica sem match) — verificar com o setor.
+
+### 7.3 Objetos criados (migração 0002)
+
+* `classificacao_orcamentaria` — catálogo completo da planilha (recarregado
+  por inteiro a cada importação; a planilha é a fonte da verdade).
+* `vw_classificacao_subacao_real` — resolve o setor no nível
+  `(ação, subação real)`, marcando as combinações ambíguas.
+* `vw_empenhos_classificados` — empenhos já com `setor` resolvido (NULL onde
+  ambíguo ou sem match). É a view para consulta/relatório.
+
+Números do teste (empenhos de 2026): 730 com setor resolvido, 725 ambíguos
+(setor NULL), 6 sem match na planilha.

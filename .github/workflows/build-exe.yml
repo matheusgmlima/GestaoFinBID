@@ -22,7 +22,8 @@ jobs:
       - name: Gerar executável
         run: >
           pyinstaller --onefile --windowed --name GestaoFinBID
-          --collect-all psycopg --collect-all psycopg_binary
+          --collect-all psycopg --collect-all psycopg_binary --collect-all openpyxl
+          --paths ingest
           ingest/app.py
 
       - name: Guardar artefato
