@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Painel de Empenhos — TJPE (exemplo)</title>
+<style>
+  :root{
+    --bg:#eef1f6; --panel:#ffffff; --panel-2:#f7f9fc; --border:#e0e6ef;
+    --ink:#12203a; --ink-2:#516079; --ink-3:#8b98ad;
+    --accent:#1f5fa8; --accent-soft:#e8f0fb; --seq:#2a78d6;
+    --cat-1:#2a78d6; --cat-2:#1baf7a; --cat-3:#eda100; --cat-4:#4a3aa7; --cat-5:#e87ba4;
+    --good:#0f8a5f; --warn:#b9770a; --bad:#cf4139; --neutral:#8b98ad;
+    --shadow:0 1px 2px rgba(18,32,58,.06),0 8px 24px rgba(18,32,58,.05);
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0c1017; --panel:#141a23; --panel-2:#1a212c; --border:#26313f;
+      --ink:#eef2f8; --ink-2:#a7b4c7; --ink-3:#6a7789;
+      --accent:#4a90e0; --accent-soft:#17273c; --seq:#3987e5;
+      --cat-1:#3987e5; --cat-2:#199e70; --cat-3:#c98500; --cat-4:#9085e9; --cat-5:#d55181;
+      --good:#1a9d6e; --warn:#c98500; --bad:#e0665f; --neutral:#6a7789;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f6; --panel:#ffffff; --panel-2:#f7f9fc; --border:#e0e6ef;
+    --ink:#12203a; --ink-2:#516079; --ink-3:#8b98ad;
+    --accent:#1f5fa8; --accent-soft:#e8f0fb; --seq:#2a78d6;
+    --cat-1:#2a78d6; --cat-2:#1baf7a; --cat-3:#eda100; --cat-4:#4a3aa7; --cat-5:#e87ba4;
+    --good:#0f8a5f; --warn:#b9770a; --bad:#cf4139; --neutral:#8b98ad;
+    --shadow:0 1px 2px rgba(18,32,58,.06),0 8px 24px rgba(18,32,58,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1017; --panel:#141a23; --panel-2:#1a212c; --border:#26313f;
+    --ink:#eef2f8; --ink-2:#a7b4c7; --ink-3:#6a7789;
+    --accent:#4a90e0; --accent-soft:#17273c; --seq:#3987e5;
+    --cat-1:#3987e5; --cat-2:#199e70; --cat-3:#c98500; --cat-4:#9085e9; --cat-5:#d55181;
+    --good:#1a9d6e; --warn:#c98500; --bad:#e0665f; --neutral:#6a7789;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;flex-direction:column;gap:3px}
+  .brand .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .brand h1{margin:0;font-size:23px;letter-spacing:-.01em;font-weight:700;text-wrap:balance}
+  .brand p{margin:0;color:var(--ink-2);font-size:13.5px}
+  .controls{display:flex;align-items:center;gap:14px}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:3px;box-shadow:var(--shadow)}
+  .seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-weight:600;font-size:13.5px;padding:6px 15px;border-radius:6px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+  .asof{color:var(--ink-3);font-size:12px;text-align:right;line-height:1.35}
+
+  .sec{margin:20px 2px 10px;font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700;display:flex;align-items:center;gap:12px}
+  .sec::after{content:"";flex:1;height:1px;background:var(--border)}
+
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:11px}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
+  .kpi .lbl{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .kpi .val{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+  .kpi .sub{font-size:11.5px;color:var(--ink-2)}
+  .kpi.accent{background:linear-gradient(160deg,var(--accent-soft),var(--panel))}
+  .meter{height:6px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:1px}
+  .meter i{display:block;height:100%;background:var(--accent);border-radius:4px}
+
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:15px 16px 12px;box-shadow:var(--shadow);min-width:0}
+  .c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c6{grid-column:span 6}
+  .c5{grid-column:span 5}.c4{grid-column:span 4}.c3{grid-column:span 3}
+  .card h2{margin:0 0 2px;font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+  .card .hint{margin:0 0 10px;color:var(--ink-3);font-size:12px}
+  .card .cap{margin:8px 0 0;color:var(--ink-2);font-size:12px}
+  .card .cap b{color:var(--ink)}
+  .fig{width:100%}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  .mini{display:flex;flex-direction:column;gap:9px}
+  .mrow{display:flex;align-items:center;gap:9px;font-size:12.5px}
+  .mrow .dot{width:9px;height:9px;border-radius:3px;flex:none}
+  .mrow .nm{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mrow .ct{margin-left:auto;color:var(--ink-3);font-variant-numeric:tabular-nums;flex:none}
+  .mrow .vl{color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:78px;text-align:right;flex:none}
+
+  .statusbar{height:12px;border-radius:6px;display:flex;overflow:hidden;background:var(--border);margin-bottom:10px}
+  .statusbar i{height:100%}
+
+  table.exy{width:100%;border-collapse:collapse;font-size:13px}
+  table.exy th,table.exy td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--border)}
+  table.exy th:first-child,table.exy td:first-child{text-align:left}
+  table.exy thead th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);font-weight:600;border-bottom-color:var(--ink-3)}
+  table.exy td{font-variant-numeric:tabular-nums}
+  table.exy tr.cur td{background:var(--accent-soft);font-weight:600}
+
+  details.sql{margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  details.sql>summary{cursor:pointer;padding:14px 16px;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:center;gap:9px}
+  details.sql>summary::-webkit-details-marker{display:none}
+  details.sql>summary::before{content:"›";font-size:20px;color:var(--accent);transition:transform .15s;line-height:0}
+  details.sql[open]>summary::before{transform:rotate(90deg)}
+  .sqlbody{padding:0 16px 16px;display:grid;gap:12px;grid-template-columns:1fr 1fr}
+  .sqlblock h3{margin:0 0 4px;font-size:12.5px;color:var(--ink-2);font-weight:700}
+  .sqlblock pre{margin:0;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--ink)}
+  .kw{color:var(--accent);font-weight:600}
+
+  footer.foot{margin-top:22px;color:var(--ink-3);font-size:12px;text-align:center;line-height:1.6}
+  .tt{position:fixed;pointer-events:none;z-index:50;background:var(--ink);color:var(--bg);padding:7px 10px;border-radius:7px;font-size:12px;line-height:1.4;box-shadow:var(--shadow);max-width:280px;opacity:0;transition:opacity .1s}
+  svg{display:block;overflow:visible}svg text{font-family:var(--sans)}
+  @media (max-width:900px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid>[class*="grid-column"],.c12,.c8,.c7,.c6,.c5,.c4,.c3{grid-column:span 12!important}
+    .sqlbody{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">TJPE · Execução Orçamentária</div>
+      <h1>Painel de Empenhos — exemplo</h1>
+      <p>Dados reais do e-Fisco no Supabase · todas as tabelas cruzadas · referência para o Power BI</p>
+    </div>
+    <div class="controls">
+      <div class="seg" id="yearseg" role="group" aria-label="Exercício"></div>
+      <div class="asof">dados até<br><b id="asof">—</b></div>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Indicadores"></section>
+
+  <div class="sec">Pagamentos e ciclo da despesa</div>
+  <div class="grid">
+    <section class="card c8">
+      <h2>Previsto × Pago por mês</h2>
+      <p class="hint">Cronograma de desembolso dos empenhos (previsto) vs. ordens bancárias pagas</p>
+      <div class="fig" id="fig-prevpago"></div>
+      <div class="legend" id="leg-prevpago"></div>
+    </section>
+    <section class="card c4">
+      <h2>Ciclo da despesa</h2>
+      <p class="hint">Quantos empenhos avançam em cada etapa</p>
+      <div class="fig" id="fig-ciclo"></div>
+      <p class="cap" id="cap-ciclo"></p>
+    </section>
+  </div>
+
+  <div class="sec">Para onde vai o dinheiro</div>
+  <div class="grid">
+    <section class="card c8">
+      <h2>Empenhado por setor / ação</h2>
+      <p class="hint">Classificação da planilha de Ações/Subações · “Não classificado” = subação com vários setores</p>
+      <div class="fig" id="fig-setor"></div>
+    </section>
+    <section class="card c4">
+      <h2>Grupo de natureza</h2>
+      <p class="hint">Categoria econômica da despesa</p>
+      <div class="fig" id="fig-gnd"></div>
+      <div class="legend" id="leg-gnd"></div>
+    </section>
+    <section class="card c7">
+      <h2>Elemento de despesa</h2>
+      <p class="hint">Em que a despesa é aplicada (top 10)</p>
+      <div class="fig" id="fig-elem"></div>
+    </section>
+    <section class="card c5">
+      <h2>Fonte · Unidade Gestora · Tipo</h2>
+      <p class="hint">Recorte por fonte de recurso, UG e tipo de documento</p>
+      <div class="mini" id="fig-fut"></div>
+    </section>
+  </div>
+
+  <div class="sec">Fornecedores e compras</div>
+  <div class="grid">
+    <section class="card c6">
+      <h2>Maiores credores</h2>
+      <p class="hint">Por valor pago no exercício</p>
+      <div class="fig" id="fig-credores"></div>
+      <p class="cap" id="cap-cred"></p>
+    </section>
+    <section class="card c6">
+      <h2>Principais bens e serviços contratados</h2>
+      <p class="hint">Itens das notas de empenho, por valor (exclui folha de pagamento)</p>
+      <div class="fig" id="fig-itens"></div>
+    </section>
+  </div>
+
+  <div class="sec">Retenções, receitas e ordens bancárias</div>
+  <div class="grid">
+    <section class="card c4">
+      <h2>Retenções por tributo</h2>
+      <p class="hint">Retido nas ordens bancárias</p>
+      <div class="fig" id="fig-ret"></div>
+      <div class="legend" id="leg-ret"></div>
+    </section>
+    <section class="card c4">
+      <h2>Situação das ordens bancárias</h2>
+      <p class="hint">Todas as OB do exercício, por status</p>
+      <div id="fig-status"></div>
+    </section>
+    <section class="card c4">
+      <h2>Correções (anulações)</h2>
+      <p class="hint">Empenhos e liquidações anulados</p>
+      <div class="mini" id="fig-anul"></div>
+    </section>
+  </div>
+
+  <div class="sec">Consolidado</div>
+  <div class="grid">
+    <section class="card c12">
+      <h2>Resumo por exercício</h2>
+      <p class="hint">Acumulado na base — cada ano cresce conforme os zips diários são carregados</p>
+      <div style="overflow-x:auto"><table class="exy" id="tbl-exy"></table></div>
+    </section>
+  </div>
+
+  <details class="sql">
+    <summary>Consultas SQL de cada painel — blueprint para o Power BI</summary>
+    <div class="sqlbody" id="sqlbody"></div>
+  </details>
+
+  <footer class="foot">
+    Painel de exemplo gerado da base <b>GestaoFinBID</b> (Supabase/PostgreSQL) — empenhos, itens, cronograma,
+    liquidações, ordens bancárias, retenções e classificação, todos cruzados.<br>
+    No Power BI, conecte-se ao mesmo banco e reproduza cada visual com as consultas acima. Valores em reais.
+  </footer>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+const DATA = {"anos": [2025, 2026], "gerado": "2026-07-10", "por_exercicio": [{"exercicio": 2024, "empenhos": 1264, "empenhado": 2427128919.43, "liquidado": 2799702771.43, "pago": 2670474227.68}, {"exercicio": 2025, "empenhos": 3415, "empenhado": 3151761377.78, "liquidado": 3129696650.71, "pago": 3012509909.86}, {"exercicio": 2026, "empenhos": 1461, "empenhado": 2267270231.95, "liquidado": 1427511208.56, "pago": 1417578961.28}], "det": {"2025": {"kpi": {"empenhos": 3415, "empenhado": 3151761377.78, "liquidado": 3129696650.71, "pago": 3012509909.86, "retido": 28467910.66, "anulado_emp": 73554913.17, "anul_emp_n": 967, "anulado_liq": 112990821.64, "anul_liq_n": 2151, "prazo": 166.1, "ncredores": 859, "ciclo": {"ne": 3415, "liq": 2709, "pag": 2753}}, "setor": [{"setor": "Remuneração de Magistrados e Servidores", "empenhado": 1855609963.78, "pago": 1847197114.99, "n": 138}, {"setor": "Contribuições Patronais do PJPE ao FUNAFIN", "empenhado": 328295144.33, "pago": 352883391.1, "n": 10}, {"setor": "Benefícios para Magistrados e Servidores", "empenhado": 315459859.17, "pago": 314925922.56, "n": 127}, {"setor": "Não classificado", "empenhado": 294037394.92, "pago": 216836821.06, "n": 1682}, {"setor": "MELHORIA DA INFRAESTRUTURA E GOVERNANÇA DE TIC", "empenhado": 117526142.91, "pago": 76912847.98, "n": 209}, {"setor": "Remuneração de Magistrados e Servidores - FERM", "empenhado": 115842713.67, "pago": 110829083.41, "n": 14}, {"setor": "EXECUÇÃO DO PLANO DE OBRAS DO PJPE", "empenhado": 52161777.63, "pago": 32101981.31, "n": 160}, {"setor": "Encargos com Pessoal Contratados e Comissionados", "empenhado": 14198414.78, "pago": 13003940.36, "n": 75}, {"setor": "Contribuições Patronais do PJPE ao FUNAPREV", "empenhado": 13679000.0, "pago": 12584454.28, "n": 7}, {"setor": "Escola Judicial", "empenhado": 8626805.4, "pago": 5620350.38, "n": 132}, {"setor": "Contribuições Patronais ao SASSEPE", "empenhado": 8497750.86, "pago": 7854761.2, "n": 3}, {"setor": "MELHORIA DA GESTÃO DE PESSOAS", "empenhado": 7321269.08, "pago": 5032477.48, "n": 77}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DO 1º E 2º GRAUS", "empenhado": 6426514.32, "pago": 5061062.64, "n": 90}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DOS JUIZADOS ESPECIAIS", "empenhado": 6079621.98, "pago": 5573973.84, "n": 148}, {"setor": "Prestação Jurisdicional-  1º E 2º GRAUS", "empenhado": 5040670.31, "pago": 3790545.94, "n": 502}, {"setor": "Gestão de Atividades TJPE", "empenhado": 1350000.0, "pago": 1185310.22, "n": 2}, {"setor": "Contribuição Patronal da Previdência Complementar", "empenhado": 980000.0, "pago": 811967.04, "n": 1}, {"setor": "Coordenadoria da Infância e Juventude", "empenhado": 296844.16, "pago": 170027.53, "n": 24}, {"setor": "Coordenadoria da Mulher", "empenhado": 242490.48, "pago": 90938.0, "n": 8}, {"setor": "Prestação Jurisdicional - Juizados Especiais", "empenhado": 89000.0, "pago": 42938.54, "n": 6}], "gnd": [{"cod": "31", "empenhado": 2353059676.49, "n": 275}, {"cod": "33", "empenhado": 680513138.36, "n": 2875}, {"cod": "44", "empenhado": 118188562.93, "n": 265}], "elemento": [{"cod": "11", "empenhado": 1619375047.68, "n": 19}, {"cod": "13", "empenhado": 352318371.67, "n": 55}, {"cod": "92", "empenhado": 230420392.4, "n": 348}, {"cod": "08", "empenhado": 149768071.47, "n": 70}, {"cod": "16", "empenhado": 139426638.59, "n": 39}, {"cod": "37", "empenhado": 137985920.07, "n": 81}, {"cod": "46", "empenhado": 128050395.2, "n": 7}, {"cod": "40", "empenhado": 86701611.05, "n": 165}, {"cod": "39", "empenhado": 79323514.17, "n": 947}, {"cod": "52", "empenhado": 75019666.14, "n": 192}], "fonte": [{"fonte": "0500", "empenhado": 2556211002.85, "n": 396}, {"fonte": "0759", "empenhado": 593748574.93, "n": 3017}, {"fonte": "0754", "empenhado": 1801800.0, "n": 2}], "ug": [{"ug": "070001", "empenhado": 2614822496.91, "n": 444}, {"ug": "070002", "empenhado": 536938880.87, "n": 2971}], "tipodoc": [{"tipo": "FOLHA DE PAGAMENTO", "empenhado": 2285768270.14, "n": 130}, {"tipo": "NORMAL", "empenhado": 853587888.17, "n": 1798}, {"tipo": "SUPRIMENTO INSTITUCIONAL", "empenhado": 11493923.43, "n": 1485}, {"tipo": "TRANSFERÊNCIAS POR CONVÊNIOS", "empenhado": 911296.04, "n": 2}], "credores": [{"credor": "FOLHA DE PAGAMENTO DO TRIBUNAL DE JUSTICA", "pago": 2271774003.34, "n": 130}, {"credor": "FUNDO FINANCEIRO DE APOSENTADORIAS E PENSOES DOS SERVIDORES DO ESTADO DE PERNAMBUCO", "pago": 352883391.1, "n": 10}, {"credor": "LIDERANCA LIMPEZA E CONSERVACAO LTDA", "pago": 38118199.16, "n": 17}, {"credor": "RM TERCEIRIZACAO E GESTAO DE RECURSOS HUMANOS LTDA", "pago": 26456265.81, "n": 21}, {"credor": "R.P.L ENGENHARIA E SERVICOS LTDA EM RECUPERACAO JUDICIAL", "pago": 23114752.31, "n": 9}, {"credor": "TELTEX TECNOLOGIA S.A", "pago": 20361212.44, "n": 33}, {"credor": "SECRETARIA DE DEFESA SOCIAL", "pago": 14898300.0, "n": 3}, {"credor": "INSTITUTO NACIONAL DO SEGURO SOCIAL", "pago": 13142812.82, "n": 33}, {"credor": "COMPANHIA ENERGETICA DE PERNAMBUCO", "pago": 12857950.9, "n": 3}, {"credor": "FUNDO DE APOSENTADORIAS E PENSOES DO ESTADO DE PERNAMBUCO", "pago": 12584454.28, "n": 7}], "itens": [{"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO AUXILIAR DE SERVICOS GERAIS,POSTO DE 44 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 27731390.73, "n": 6}, {"desc": "SERVICO DE LIGACAO E FORNECIMENTO DE AGUA E ENERGIA ELETRICA - DO TIPO FORNECIMENTO DE ENERGIA ELETRICA", "valor": 17279256.16, "n": 11}, {"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO ASSISTENTE ADMINISTRATIVO,NIVEL II,POSTO DE 40 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 14625621.3, "n": 6}, {"desc": "REFORMA PREDIAL", "valor": 13475377.62, "n": 17}, {"desc": "SERVICO DE OPERACAO - SERVICOS DE COMPUTACAO EM NUVEM", "valor": 12003731.23, "n": 4}, {"desc": "SUPRIMENTO DE FUNDO INSTITUCIONAL - ITEM GENÉRICO", "valor": 11493923.43, "n": 1485}, {"desc": "MICROCOMPUTADOR - TIPO DESKTOP,COM PROCESSADOR DA 13 GERACAO INTEL (CORE I5-13500T OU SUPERIOR) OU 7 GERACAO AMD OU SUPERIOR,DE 4,60 GHZ,MEMORIA RAM DDR5,DE 16GB,PADRAO ABNT-2,MOUSE LASER OU OPTICO COM 2 BOTOES E SCROLL, CONECTOR USB E RESOLUCAO MINIMA DE 1.000 DPI,GABINETE USFF,EM EMBALAGEM APROPRIADA,WINDOWS 11 PROFESSIONAL,GARANTIA DE 60 MESES,COM COM TODOS OS CABOS E CONECTORES NECESSARIOS E MOUSEPAD-   MARCA:LENOVO", "valor": 11227400.0, "n": 2}, {"desc": "SASSEPE - AUXÍLIO SAÚDE", "valor": 8497750.86, "n": 3}, {"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO MOTORISTA,POSTO DE 44 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 8346652.61, "n": 3}, {"desc": "REFORMA PREDIAL-   MARCA:NÃO SE APLICA.", "valor": 8111124.23, "n": 10}], "retencoes": [{"familia": "INSS", "valor": 11757851.64, "n": 2649}, {"familia": "IRRF", "valor": 10310570.11, "n": 5681}, {"familia": "ISS", "valor": 6397125.91, "n": 3152}, {"familia": "Outros", "valor": 2363.0, "n": 5}], "pag_mes": [{"mes": "2025-01", "pago": 180954622.72, "n": 1208}, {"mes": "2025-02", "pago": 164206103.33, "n": 1913}, {"mes": "2025-03", "pago": 185781793.47, "n": 2005}, {"mes": "2025-04", "pago": 180707061.15, "n": 2410}, {"mes": "2025-05", "pago": 175294228.66, "n": 2415}, {"mes": "2025-06", "pago": 156426114.47, "n": 1903}, {"mes": "2025-07", "pago": 220071335.75, "n": 2231}, {"mes": "2025-08", "pago": 216698540.65, "n": 3044}, {"mes": "2025-09", "pago": 176258897.14, "n": 3131}, {"mes": "2025-10", "pago": 218318697.24, "n": 3045}, {"mes": "2025-11", "pago": 240782349.91, "n": 3120}, {"mes": "2025-12", "pago": 538158429.24, "n": 2856}], "crono_mes": [{"mes": 1, "prev": 260730676.44}, {"mes": 2, "prev": 227459932.22}, {"mes": 3, "prev": 235546949.57}, {"mes": 4, "prev": 226693522.51}, {"mes": 5, "prev": 223174230.19}, {"mes": 6, "prev": 267886395.99}, {"mes": 7, "prev": 213166735.85}, {"mes": 8, "prev": 230517980.72}, {"mes": 9, "prev": 261454396.24}, {"mes": 10, "prev": 400516106.18}, {"mes": 11, "prev": 360097783.44}, {"mes": 12, "prev": 244516668.43}], "status_ob": [{"status": "PAGA", "n": 29281, "valor": 2653658173.73}, {"status": "ENVIADA", "n": 301, "valor": 4297374.03}, {"status": "DEVOLVIDA", "n": 144, "valor": 693516.71}, {"status": "DEVOLVIDA PÓS PAGAMENTO", "n": 2, "valor": 7903.34}, {"status": "AJUSTADA", "n": 1, "valor": 1532189.48}]}, "2026": {"kpi": {"empenhos": 1461, "empenhado": 2267270231.95, "liquidado": 1427511208.56, "pago": 1417578961.28, "retido": 11569245.49, "anulado_emp": 7048159.0, "anul_emp_n": 305, "anulado_liq": 9837922.95, "anul_liq_n": 606, "prazo": 82.8, "ncredores": 567, "ciclo": {"ne": 1461, "liq": 1074, "pag": 1038}}, "setor": [{"setor": "Remuneração de Magistrados e Servidores", "empenhado": 1282745440.54, "pago": 892613787.61, "n": 48}, {"setor": "Benefícios para Magistrados e Servidores", "empenhado": 264762870.32, "pago": 168899939.52, "n": 46}, {"setor": "Contribuições Patronais do PJPE ao FUNAFIN", "empenhado": 260900000.0, "pago": 159310758.21, "n": 2}, {"setor": "Não classificado", "empenhado": 159558583.24, "pago": 72575663.04, "n": 731}, {"setor": "MELHORIA DA INFRAESTRUTURA E GOVERNANÇA DE TIC", "empenhado": 106130146.85, "pago": 45675803.8, "n": 123}, {"setor": "Remuneração de Magistrados e Servidores - FERM", "empenhado": 96000000.0, "pago": 38253987.05, "n": 1}, {"setor": "EXECUÇÃO DO PLANO DE OBRAS DO PJPE", "empenhado": 34039571.29, "pago": 12226362.12, "n": 64}, {"setor": "MELHORIA DA GESTÃO DE PESSOAS", "empenhado": 18367752.32, "pago": 4980478.52, "n": 29}, {"setor": "Encargos com Pessoal Contratados e Comissionados", "empenhado": 10216331.58, "pago": 5188181.1, "n": 22}, {"setor": "Contribuições Patronais do PJPE ao FUNAPREV", "empenhado": 10130000.0, "pago": 5839421.69, "n": 3}, {"setor": "Contribuições Patronais ao SASSEPE", "empenhado": 7000000.0, "pago": 3175326.27, "n": 1}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DOS JUIZADOS ESPECIAIS", "empenhado": 5060812.69, "pago": 2082300.91, "n": 75}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DO 1º E 2º GRAUS", "empenhado": 4218700.6, "pago": 2231996.39, "n": 36}, {"setor": "Escola Judicial", "empenhado": 3281477.14, "pago": 1577194.84, "n": 34}, {"setor": "Prestação Jurisdicional-  1º E 2º GRAUS", "empenhado": 2528747.38, "pago": 1659099.21, "n": 232}, {"setor": "Gestão de Atividades TJPE", "empenhado": 1300000.0, "pago": 595600.03, "n": 1}, {"setor": "Contribuição Patronal da Previdência Complementar", "empenhado": 802000.0, "pago": 581056.53, "n": 3}, {"setor": "Coordenadoria da Infância e Juventude", "empenhado": 154418.0, "pago": 95235.03, "n": 7}, {"setor": "Coordenadoria da Mulher", "empenhado": 37380.0, "pago": 4376.13, "n": 2}, {"setor": "Prestação Jurisdicional - Juizados Especiais", "empenhado": 36000.0, "pago": 12393.28, "n": 1}], "gnd": [{"cod": "31", "empenhado": 1673702978.86, "n": 87}, {"cod": "33", "empenhado": 561858459.92, "n": 1291}, {"cod": "44", "empenhado": 31708793.17, "n": 83}], "elemento": [{"cod": "11", "empenhado": 1211609710.28, "n": 4}, {"cod": "13", "empenhado": 280021959.05, "n": 17}, {"cod": "16", "empenhado": 134616979.55, "n": 9}, {"cod": "08", "empenhado": 119577616.36, "n": 14}, {"cod": "37", "empenhado": 117549360.27, "n": 30}, {"cod": "46", "empenhado": 114100362.47, "n": 3}, {"cod": "40", "empenhado": 72997411.79, "n": 99}, {"cod": "39", "empenhado": 52943052.15, "n": 436}, {"cod": "92", "empenhado": 36400482.09, "n": 156}, {"cod": "93", "empenhado": 31294001.26, "n": 25}], "fonte": [{"fonte": "0500", "empenhado": 1838313429.72, "n": 132}, {"fonte": "0759", "empenhado": 428497935.57, "n": 1324}, {"fonte": "0754", "empenhado": 458866.66, "n": 5}], "ug": [{"ug": "070001", "empenhado": 1854131826.56, "n": 147}, {"ug": "070002", "empenhado": 413138405.39, "n": 1314}], "tipodoc": [{"tipo": "FOLHA DE PAGAMENTO", "empenhado": 1643345214.37, "n": 32}, {"tipo": "NORMAL", "empenhado": 612248894.92, "n": 803}, {"tipo": "TRANSFERÊNCIAS POR CONVÊNIOS", "empenhado": 7413599.2, "n": 2}, {"tipo": "SUPRIMENTO INSTITUCIONAL", "empenhado": 4262523.46, "n": 624}], "credores": [{"credor": "FOLHA DE PAGAMENTO DO TRIBUNAL DE JUSTICA", "pago": 1099568456.77, "n": 32}, {"credor": "FUNDO FINANCEIRO DE APOSENTADORIAS E PENSOES DOS SERVIDORES DO ESTADO DE PERNAMBUCO", "pago": 159310758.21, "n": 2}, {"credor": "LIDERANCA LIMPEZA E CONSERVACAO LTDA", "pago": 12774835.08, "n": 12}, {"credor": "RM TERCEIRIZACAO E GESTAO DE RECURSOS HUMANOS LTDA", "pago": 10408471.44, "n": 4}, {"credor": "R.P.L ENGENHARIA E SERVICOS LTDA EM RECUPERACAO JUDICIAL", "pago": 9350963.87, "n": 3}, {"credor": "SERVICO FEDERAL DE PROCESSAMENTO DE DADOS (SERPRO)", "pago": 7240045.53, "n": 8}, {"credor": "SECRETARIA DE DEFESA SOCIAL", "pago": 7041400.0, "n": 1}, {"credor": "CONSELHO NACIONAL DE JUSTICA", "pago": 6906099.16, "n": 1}, {"credor": "BRASOFTWARE INFORMATICA LTDA", "pago": 6322000.08, "n": 2}, {"credor": "FUNDO DE APOSENTADORIAS E PENSOES DO ESTADO DE PERNAMBUCO", "pago": 5839421.69, "n": 3}], "itens": [{"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO AUXILIAR DE SERVICOS GERAIS,POSTO DE 44 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 18543863.4, "n": 3}, {"desc": "ESTAGIÁRIOS - PAGAMENTO DIRETO", "valor": 17980000.0, "n": 1}, {"desc": "SERVICO DE OPERACAO - SERVICOS DE COMPUTACAO EM NUVEM", "valor": 15647838.11, "n": 1}, {"desc": "SERVICO DE LIGACAO E FORNECIMENTO DE AGUA E ENERGIA ELETRICA - DO TIPO FORNECIMENTO DE ENERGIA ELETRICA", "valor": 14314305.21, "n": 3}, {"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO ASSISTENTE ADMINISTRATIVO,NIVEL II,POSTO DE 40 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 13172670.46, "n": 1}, {"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO MOTORISTA,POSTO DE 44 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 8711118.67, "n": 5}, {"desc": "SASSEPE - AUXÍLIO SAÚDE", "valor": 7000000.0, "n": 1}, {"desc": "CONTRIBUIÇÕES - TRANSFERÊNCIAS ÀS INSTITUIÇÕES PÚBLICAS DA UNIÃO", "valor": 6906099.16, "n": 1}, {"desc": "SERVICO DE ACESSO E UTILIZACAO - LINK DEDICADO (FULL DUPLEX),UTILIZANDO CABO DE FIBRA OTICA,VELOCIDADE DE 100 MBPS", "valor": 5730401.7, "n": 2}, {"desc": "SERVICO DE PRESTACAO DE MAO DE OBRA - DO TIPO ENGENHEIRO PLENO,POSTO DE 40 HORAS SEMANAIS,TURNO DIURNO,SEGUNDA A SEXTA", "valor": 5610238.2, "n": 2}], "retencoes": [{"familia": "INSS", "valor": 4634986.46, "n": 1061}, {"familia": "IRRF", "valor": 3850004.08, "n": 2803}, {"familia": "ISS", "valor": 3079802.21, "n": 1466}, {"familia": "Outros", "valor": 4452.74, "n": 7}], "pag_mes": [{"mes": "2026-01", "pago": 192329164.88, "n": 1764}, {"mes": "2026-02", "pago": 126536224.65, "n": 1629}, {"mes": "2026-03", "pago": 207714085.39, "n": 2226}, {"mes": "2026-04", "pago": 204730819.18, "n": 2926}, {"mes": "2026-05", "pago": 163547113.47, "n": 2750}, {"mes": "2026-06", "pago": 171866837.68, "n": 2320}, {"mes": "2026-07", "pago": 44957173.6, "n": 240}], "crono_mes": [{"mes": 1, "prev": 234855130.96}, {"mes": 2, "prev": 228116863.86}, {"mes": 3, "prev": 222189263.86}, {"mes": 4, "prev": 248846586.62}, {"mes": 5, "prev": 217659950.42}, {"mes": 6, "prev": 229506016.25}, {"mes": 7, "prev": 215673059.06}, {"mes": 8, "prev": 213647182.67}, {"mes": 9, "prev": 212479485.17}, {"mes": 10, "prev": 209639148.86}, {"mes": 11, "prev": 18288479.95}, {"mes": 12, "prev": 16369064.27}], "status_ob": [{"status": "PAGA", "n": 13855, "valor": 1111681418.85}, {"status": "ENVIADA", "n": 184, "valor": 462747.08}, {"status": "DEVOLVIDA", "n": 110, "valor": 11396206.64}, {"status": "AJUSTADA", "n": 1, "valor": 445.0}]}}};
+const NS="http://www.w3.org/2000/svg";
+const brl0=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const numf=new Intl.NumberFormat('pt-BR');
+function compact(v){const a=Math.abs(v);
+  if(a>=1e9)return 'R$ '+(v/1e9).toLocaleString('pt-BR',{maximumFractionDigits:2})+' bi';
+  if(a>=1e6)return 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';
+  if(a>=1e3)return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil';
+  return brl0.format(v);}
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function mesLbl(s){return MES[+s.slice(5,7)-1]+'/'+s.slice(2,4);}
+function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+const tt=document.getElementById('tt');
+function showTT(h,x,y){tt.innerHTML=h;tt.style.opacity=1;const r=tt.getBoundingClientRect();
+  let nx=x+14,ny=y+14;if(nx+r.width>innerWidth-8)nx=x-r.width-14;if(ny+r.height>innerHeight-8)ny=y-r.height-14;
+  tt.style.left=nx+'px';tt.style.top=ny+'px';}
+function hideTT(){tt.style.opacity=0;}
+const CATV=['var(--cat-1)','var(--cat-2)','var(--cat-3)','var(--cat-4)','var(--cat-5)','var(--neutral)'];
+const GND={'31':'Pessoal e Encargos','32':'Juros da Dívida','33':'Outras Desp. Correntes','44':'Investimentos','45':'Inversões Financeiras','46':'Amortização'};
+const ELEM={'01':'Aposentadorias e Reformas','03':'Pensões','04':'Contrat. por Tempo Determ.','08':'Outros Benef. Assistenciais','11':'Vencimentos e Vant. Fixas','13':'Obrigações Patronais','14':'Diárias','16':'Outras Desp. Var. Pessoal','30':'Material de Consumo','33':'Passagens e Locomoção','35':'Serv. de Consultoria','36':'Serviços de Terceiros PF','37':'Locação de Mão de Obra','39':'Serviços de Terceiros PJ','40':'Serviços de TIC (PJ)','46':'Auxílio-Alimentação','47':'Obrigações Tributárias','48':'Outros Auxílios Financeiros','49':'Auxílio-Transporte','51':'Obras e Instalações','52':'Equip. e Material Perm.','92':'Desp. Exerc. Anteriores','93':'Indenizações e Restituições'};
+const FONTE={'0500':'Recursos Ordinários','0759':'FERM / FUNSEG','0754':'BID'};
+let YEAR=String(DATA.anos[DATA.anos.length-1]);
+
+/* horizontal bars */
+function hbars(host,items,o){
+  host.innerHTML='';const fmt=o.fmt||compact;
+  const W=host.clientWidth||600,rh=o.rh||31,top=4,H=top+items.length*rh+4;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',height:H,role:'img'});
+  const mx=o.max||Math.max(...items.map(o.value),1);
+  const labelW=Math.min(o.labelW||230,Math.max(110,W*0.34)),barX=labelW+8,vgap=o.vgap||92,barW=Math.max(50,W-barX-vgap);
+  items.forEach((it,i)=>{const y=top+i*rh,v=o.value(it),w=Math.max(2,barW*v/mx);
+    svg.appendChild(el('rect',{x:barX,y:y+rh/2-6,width:barW,height:12,rx:6,fill:'var(--border)',opacity:.5}));
+    svg.appendChild(el('rect',{x:barX,y:y+rh/2-6,width:w,height:12,rx:6,fill:o.color(it,i)}));
+    const lt=el('text',{x:0,y:y+rh/2+4,'font-size':12.5,fill:'var(--ink)','font-weight':600});
+    lt.textContent=o.label(it);lt.setAttribute('data-full',o.label(it));svg.appendChild(lt);
+    const vt=el('text',{x:W,y:y+rh/2+4,'font-size':12.5,'text-anchor':'end',fill:'var(--ink-2)'});
+    vt.textContent=fmt(v);svg.appendChild(vt);
+    const hit=el('rect',{x:0,y:y,width:W,height:rh,fill:'transparent'});
+    hit.addEventListener('mousemove',e=>showTT(`<b>${o.label(it)}</b><br>${fmt(v)}${o.sub?'<br>'+o.sub(it):''}`,e.clientX,e.clientY));
+    hit.addEventListener('mouseleave',hideTT);svg.appendChild(hit);});
+  host.appendChild(svg);
+  svg.querySelectorAll('text[data-full]').forEach(t=>{let s=t.getAttribute('data-full');
+    while(t.getComputedTextLength()>labelW&&s.length>4){s=s.slice(0,-1);t.textContent=s.trim()+'…';}});
+}
+/* donut */
+function donut(host,leg,items){
+  host.innerHTML='';leg.innerHTML='';
+  const W=host.clientWidth||360,H=170,cx=W*0.34,cy=H/2,r=58,rin=37;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',height:H});
+  const total=items.reduce((s,d)=>s+d.v,0)||1;let a0=-Math.PI/2;
+  items.forEach((d,i)=>{const f=d.v/total,a1=a0+f*2*Math.PI,lg=f>0.5?1:0;
+    const p=el('path',{d:arc(cx,cy,r,rin,a0,a1,lg),fill:CATV[i%CATV.length],stroke:'var(--panel)','stroke-width':2});
+    p.addEventListener('mousemove',e=>showTT(`<b>${d.nm}</b><br>${compact(d.v)} · ${(f*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}%${d.n?'<br>'+numf.format(d.n)+' registros':''}`,e.clientX,e.clientY));
+    p.addEventListener('mouseleave',hideTT);svg.appendChild(p);a0=a1;});
+  svg.appendChild(mk(el('text',{x:cx,y:cy-2,'text-anchor':'middle','font-size':10.5,fill:'var(--ink-3)'}),'total'));
+  svg.appendChild(mk(el('text',{x:cx,y:cy+13,'text-anchor':'middle','font-size':13.5,'font-weight':700,fill:'var(--ink)'}),compact(total)));
+  host.appendChild(svg);
+  items.forEach((d,i)=>{const s=document.createElement('span');
+    s.innerHTML=`<i style="background:${CATV[i%CATV.length]}"></i>${d.nm} · <b class="tnum">&nbsp;${(d.v/total*100).toLocaleString('pt-BR',{maximumFractionDigits:0})}%</b>`;leg.appendChild(s);});
+}
+function mk(t,s){t.textContent=s;return t;}
+function arc(cx,cy,r,ri,a0,a1,lg){const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1),
+  xi1=cx+ri*Math.cos(a1),yi1=cy+ri*Math.sin(a1),xi0=cx+ri*Math.cos(a0),yi0=cy+ri*Math.sin(a0);
+  return `M${x0} ${y0} A${r} ${r} 0 ${lg} 1 ${x1} ${y1} L${xi1} ${yi1} A${ri} ${ri} 0 ${lg} 0 ${xi0} ${yi0} Z`;}
+/* dual line (prev x pago) */
+function dualLine(host,leg,months,series){
+  host.innerHTML='';leg.innerHTML='';
+  const W=host.clientWidth||700,H=220,padL=52,padR=14,padT=12,padB=26;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',height:H});
+  const mx=Math.max(1,...series.flatMap(s=>months.map(m=>s.val[m]||0)));
+  const iw=W-padL-padR,ih=H-padT-padB;
+  const X=i=>padL+(months.length<=1?iw/2:iw*i/(months.length-1)),Y=v=>padT+ih-ih*v/mx;
+  for(let g=0;g<=3;g++){const v=mx*g/3,y=Y(v);
+    svg.appendChild(el('line',{x1:padL,y1:y,x2:W-padR,y2:y,stroke:'var(--border)','stroke-width':1}));
+    svg.appendChild(mk(el('text',{x:padL-8,y:y+4,'text-anchor':'end','font-size':10.5,fill:'var(--ink-3)'}),compact(v).replace('R$ ','')));}
+  months.forEach((m,i)=>svg.appendChild(mk(el('text',{x:X(i),y:H-8,'text-anchor':'middle','font-size':10,fill:'var(--ink-3)'}),MES[m-1])));
+  series.forEach(s=>{
+    const pts=months.map((m,i)=>({i,m,v:s.val[m]})).filter(p=>p.v!==undefined);
+    if(!pts.length)return;
+    let dl='';pts.forEach((p,k)=>dl+=(k?' L':'M')+X(p.i)+' '+Y(p.v));
+    if(s.fill){let al='M'+X(pts[0].i)+' '+Y(0);pts.forEach(p=>al+=' L'+X(p.i)+' '+Y(p.v));al+=' L'+X(pts[pts.length-1].i)+' '+Y(0)+' Z';
+      const gid='g'+Math.random().toString(36).slice(2),defs=el('defs',{}),lgr=el('linearGradient',{id:gid,x1:0,y1:0,x2:0,y2:1});
+      lgr.appendChild(el('stop',{offset:'0%','stop-color':s.color,'stop-opacity':.22}));lgr.appendChild(el('stop',{offset:'100%','stop-color':s.color,'stop-opacity':0}));
+      defs.appendChild(lgr);svg.appendChild(defs);svg.appendChild(el('path',{d:al,fill:`url(#${gid})`}));}
+    svg.appendChild(el('path',{d:dl,fill:'none',stroke:s.color,'stroke-width':2.2,'stroke-dasharray':s.dash||'','stroke-linejoin':'round','stroke-linecap':'round'}));
+    pts.forEach(p=>svg.appendChild(el('circle',{cx:X(p.i),cy:Y(p.v),r:3,fill:s.color,stroke:'var(--panel)','stroke-width':1.3})));
+  });
+  const hover=el('line',{x1:0,y1:padT,x2:0,y2:padT+ih,stroke:'var(--accent)','stroke-width':1,opacity:0});svg.appendChild(hover);
+  const hit=el('rect',{x:padL,y:0,width:iw,height:H,fill:'transparent'});
+  hit.addEventListener('mousemove',e=>{const rect=svg.getBoundingClientRect(),sx=(e.clientX-rect.left)*W/rect.width;
+    let i=Math.round((sx-padL)/(iw/(months.length-1||1)));i=Math.max(0,Math.min(months.length-1,i));const m=months[i];
+    hover.setAttribute('x1',X(i));hover.setAttribute('x2',X(i));hover.setAttribute('opacity',1);
+    showTT(`<b>${MES[m-1]}/${YEAR.slice(2)}</b>`+series.map(s=>s.val[m]!==undefined?`<br>${s.name}: ${compact(s.val[m])}`:'').join(''),e.clientX,e.clientY);});
+  hit.addEventListener('mouseleave',()=>{hover.setAttribute('opacity',0);hideTT();});svg.appendChild(hit);
+  host.appendChild(svg);
+  series.forEach(s=>{const sp=document.createElement('span');sp.innerHTML=`<i style="background:${s.color}"></i>${s.name}`;leg.appendChild(sp);});
+}
+/* mini list */
+function miniList(host,items,{color,label,val,ct}){
+  host.innerHTML='';items.forEach((it,i)=>{const r=document.createElement('div');r.className='mrow';
+    r.innerHTML=`<span class="dot" style="background:${color(it,i)}"></span><span class="nm">${label(it)}</span>`+
+      (ct?`<span class="ct">${ct(it)}</span>`:'')+`<span class="vl">${val(it)}</span>`;host.appendChild(r);});
+}
+function statusView(host,items){
+  host.innerHTML='';const map={'PAGA':'var(--good)','ENVIADA':'var(--warn)','DEVOLVIDA':'var(--bad)','DEVOLVIDA PÓS PAGAMENTO':'var(--bad)','AJUSTADA':'var(--neutral)'};
+  const tot=items.reduce((s,d)=>s+d.n,0)||1,bar=document.createElement('div');bar.className='statusbar';
+  items.forEach(d=>{const i=document.createElement('i');i.style.background=map[d.status]||'var(--neutral)';i.style.width=(d.n/tot*100)+'%';bar.appendChild(i);});
+  host.appendChild(bar);const wrap=document.createElement('div');wrap.className='mini';
+  items.forEach(d=>{const r=document.createElement('div');r.className='mrow';
+    r.innerHTML=`<span class="dot" style="border-radius:50%;background:${map[d.status]||'var(--neutral)'}"></span>`+
+      `<span class="nm">${d.status.charAt(0)+d.status.slice(1).toLowerCase()}</span>`+
+      `<span class="ct">${numf.format(d.n)}</span><span class="vl">${compact(d.valor)}</span>`;wrap.appendChild(r);});
+  host.appendChild(wrap);
+}
+function kpis(host,k){
+  const exec=k.empenhado?k.pago/k.empenhado*100:0;host.innerHTML='';
+  [
+    {lbl:'Empenhado',val:compact(k.empenhado),sub:numf.format(k.empenhos)+' empenhos'},
+    {lbl:'Liquidado',val:compact(k.liquidado),sub:(k.empenhado?(k.liquidado/k.empenhado*100).toFixed(0):0)+'% do empenhado'},
+    {lbl:'Pago',val:compact(k.pago),sub:(k.empenhado?(k.pago/k.empenhado*100).toFixed(0):0)+'% do empenhado'},
+    {lbl:'% Executado',val:exec.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%',sub:'pago ÷ empenhado',meter:Math.min(100,exec),accent:true},
+    {lbl:'Retido (tributos)',val:compact(k.retido),sub:'INSS · IRRF · ISS'},
+    {lbl:'Prazo médio',val:k.prazo.toLocaleString('pt-BR',{maximumFractionDigits:0})+' dias',sub:'empenho → pagamento'},
+  ].forEach(t=>{const d=document.createElement('div');d.className='kpi'+(t.accent?' accent':'');
+    d.innerHTML=`<div class="lbl">${t.lbl}</div><div class="val tnum">${t.val}</div>`+
+      (t.meter!==undefined?`<div class="meter"><i style="width:${t.meter}%"></i></div>`:'')+`<div class="sub">${t.sub}</div>`;host.appendChild(d);});
+}
+function exyTable(){const t=document.getElementById('tbl-exy');
+  t.innerHTML='<thead><tr><th>Exercício</th><th>Empenhos</th><th>Empenhado</th><th>Liquidado</th><th>Pago</th><th>% Exec.</th></tr></thead><tbody>'+
+    DATA.por_exercicio.map(r=>{const ex=r.empenhado?r.pago/r.empenhado*100:0;
+      return `<tr class="${String(r.exercicio)===YEAR?'cur':''}"><td>${r.exercicio}</td><td>${numf.format(r.empenhos)}</td><td>${compact(r.empenhado)}</td><td>${compact(r.liquidado)}</td><td>${compact(r.pago)}</td><td>${ex.toLocaleString('pt-BR',{maximumFractionDigits:1})}%</td></tr>`;}).join('')+'</tbody>';}
+
+function render(){
+  const d=DATA.det[YEAR],k=d.kpi;
+  document.getElementById('asof').textContent=(YEAR===String(DATA.anos[DATA.anos.length-1]))?DATA.gerado.split('-').reverse().join('/'):('exercício '+YEAR);
+  kpis(document.getElementById('kpis'),k);
+  // prev x pago
+  const prev={},pago={};d.crono_mes.forEach(c=>prev[c.mes]=c.prev);d.pag_mes.forEach(p=>pago[+p.mes.slice(5,7)]=p.pago);
+  dualLine(document.getElementById('fig-prevpago'),document.getElementById('leg-prevpago'),
+    [1,2,3,4,5,6,7,8,9,10,11,12],
+    [{name:'Previsto (cronograma)',color:'var(--cat-3)',val:prev,dash:'5 4'},
+     {name:'Pago',color:'var(--seq)',val:pago,fill:true}]);
+  // ciclo
+  hbars(document.getElementById('fig-ciclo'),
+    [{n:'Empenhados',v:k.ciclo.ne},{n:'Com liquidação',v:k.ciclo.liq},{n:'Com pagamento',v:k.ciclo.pag}],
+    {value:x=>x.v,label:x=>x.n,color:()=> 'var(--seq)',max:k.ciclo.ne,fmt:numf.format,rh:34,labelW:130,vgap:64,
+     sub:x=>(x.v/k.ciclo.ne*100).toLocaleString('pt-BR',{maximumFractionDigits:0})+'% dos empenhos'});
+  document.getElementById('cap-ciclo').innerHTML=`<b>${(k.ciclo.pag/k.ciclo.ne*100).toFixed(0)}%</b> dos empenhos já geraram pagamento.`;
+  // setor
+  hbars(document.getElementById('fig-setor'),d.setor.slice(0,11),{value:s=>s.empenhado,label:s=>s.setor,
+    color:s=>s.setor==='Não classificado'?'var(--neutral)':'var(--seq)',sub:s=>numf.format(s.n)+' empenhos · pago '+compact(s.pago)});
+  // gnd donut
+  donut(document.getElementById('fig-gnd'),document.getElementById('leg-gnd'),
+    d.gnd.map(g=>({nm:GND[g.cod]||('GND '+g.cod),v:g.empenhado,n:g.n})));
+  // elemento
+  hbars(document.getElementById('fig-elem'),d.elemento,{value:e=>e.empenhado,label:e=>ELEM[e.cod]||('Elemento '+e.cod),
+    color:()=> 'var(--seq)',sub:e=>numf.format(e.n)+' empenhos'});
+  // fonte+ug+tipo mini
+  const fut=document.getElementById('fig-fut');fut.innerHTML='';
+  const seg=(titulo,arr,lbl)=>{const h=document.createElement('div');h.className='mrow';h.style.marginTop='2px';
+    h.innerHTML=`<span class="nm" style="color:var(--ink-3);font-size:11px;letter-spacing:.06em;text-transform:uppercase">${titulo}</span>`;fut.appendChild(h);
+    arr.forEach((it,i)=>{const r=document.createElement('div');r.className='mrow';
+      r.innerHTML=`<span class="dot" style="background:${CATV[i%CATV.length]}"></span><span class="nm">${lbl(it)}</span><span class="vl">${compact(it.empenhado)}</span>`;fut.appendChild(r);});};
+  seg('Fonte de recurso',d.fonte,f=>FONTE[f.fonte]||f.fonte);
+  seg('Unidade gestora',d.ug,u=>u.ug==='070001'?'070001 · 1º grau/administração':'070002 · FERM');
+  seg('Tipo de documento',d.tipodoc,t=>t.tipo.charAt(0)+t.tipo.slice(1).toLowerCase());
+  // credores
+  hbars(document.getElementById('fig-credores'),d.credores.slice(0,8),{value:c=>c.pago,label:c=>c.credor,
+    color:()=> 'var(--seq)',fmt:compact,sub:c=>numf.format(c.n)+' empenhos',labelW:190});
+  const top5=d.credores.slice(0,5).reduce((s,c)=>s+c.pago,0);
+  document.getElementById('cap-cred').innerHTML=`Os <b>5 maiores</b> concentram <b>${(top5/k.pago*100).toFixed(0)}%</b> do valor pago · ${numf.format(k.ncredores)} credores no total.`;
+  // itens
+  hbars(document.getElementById('fig-itens'),d.itens.slice(0,8),{value:i=>i.valor,label:i=>i.desc,
+    color:()=> 'var(--cat-2)',sub:i=>numf.format(i.n)+' itens',labelW:210});
+  // retencoes donut
+  donut(document.getElementById('fig-ret'),document.getElementById('leg-ret'),
+    d.retencoes.filter(r=>r.valor>0).map(r=>({nm:r.familia,v:r.valor,n:r.n})));
+  // status
+  statusView(document.getElementById('fig-status'),d.status_ob);
+  // anulacoes
+  miniList(document.getElementById('fig-anul'),
+    [{nm:'Empenhos anulados',n:k.anul_emp_n,v:k.anulado_emp,c:'var(--bad)'},
+     {nm:'Liquidações anuladas',n:k.anul_liq_n,v:k.anulado_liq,c:'var(--warn)'}],
+    {color:x=>x.c,label:x=>x.nm,ct:x=>numf.format(x.n)+'×',val:x=>compact(x.v)});
+  exyTable();paintSQL();
+}
+function sqlFor(y){return [
+ ['KPIs de execução','select count(*), sum(valor) empenhado,\n       sum(valor_liquidado) liquidado, sum(valor_pago) pago\nfrom empenhos where exercicio = '+y+';'],
+ ['Previsto × Pago','-- previsto\nselect mes, sum(valor) from empenho_cronograma\nwhere numero_ne like \''+y+'NE%\' group by mes;\n-- pago\nselect extract(month from data_emissao) mes, sum(valor)\nfrom ordens_bancarias where upper(status)=\'PAGA\'\n and extract(year from data_emissao)= '+y+' group by 1;'],
+ ['Ciclo NE→LE→OB','select count(*) empenhos,\n count(*) filter (where exists (select 1 from liquidacoes l\n   where l.numero_ne=e.numero_ne and l.unidade_gestora=e.unidade_gestora)) com_liquidacao,\n count(*) filter (where exists (select 1 from ordens_bancarias o\n   where o.numero_ne=e.numero_ne and o.unidade_gestora=e.unidade_gestora\n   and upper(o.status)=\'PAGA\')) com_pagamento\nfrom empenhos e where exercicio = '+y+';'],
+ ['Empenhado por setor','select setor, sum(valor) empenhado, sum(valor_pago) pago, count(*) n\nfrom vw_empenhos_classificados where exercicio = '+y+'\ngroup by setor order by empenhado desc nulls last;'],
+ ['Grupo de natureza','select substr(natureza_despesa,1,2) gnd,\n       sum(valor) empenhado, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by 1 order by empenhado desc;'],
+ ['Elemento de despesa','select substr(natureza_despesa,5,2) elemento,\n       sum(valor) empenhado, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by 1 order by empenhado desc limit 10;'],
+ ['Maiores credores','select credor_nome, sum(valor_pago) pago, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by 1 order by pago desc nulls last limit 10;'],
+ ['Itens de despesa','select trim(descricao) item, sum(valor_total) valor, count(*) n\nfrom empenho_itens where numero_ne like \''+y+'NE%\'\n and natureza_subitem not like \'319%\'\ngroup by 1 order by valor desc limit 10;'],
+ ['Retenções por tributo','select case when tipo like \'INSS%\' then \'INSS\'\n  when tipo like \'IRRF%\' then \'IRRF\'\n  when tipo like \'ISS%\' then \'ISS\' else \'Outros\' end tributo,\n  sum(valor) valor, count(*) n\nfrom retencoes where numero_rn like \''+y+'RN%\' group by 1;'],
+ ['Anulações','select count(*), sum(valor) from empenho_anulacoes\nwhere numero_na like \''+y+'NA%\';   -- e liquidacao_anulacoes (AL)'],
+];}
+function paintSQL(){const kw=/\b(select|from|where|group by|order by|sum|count|and|as|limit|nulls last|not like|like|filter|exists|extract|substr|trim|upper|desc|case|when|then|else|end)\b/gi;
+  document.getElementById('sqlbody').innerHTML=sqlFor(YEAR).map(([t,q])=>
+    `<div class="sqlblock"><h3>${t}</h3><pre>${q.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(kw,m=>'<span class="kw">'+m+'</span>')}</pre></div>`).join('');}
+
+const seg=document.getElementById('yearseg');
+DATA.anos.forEach(y=>{const b=document.createElement('button');b.textContent=y;b.setAttribute('aria-pressed',String(y)===YEAR);
+  b.onclick=()=>{YEAR=String(y);[...seg.children].forEach(c=>c.setAttribute('aria-pressed',c.textContent===YEAR));render();};seg.appendChild(b);});
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(render,150);});
+render();
+</script>
+
+</body>
+</html>

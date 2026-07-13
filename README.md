@@ -149,3 +149,18 @@ Não é o painel final: serve para alinhar **o que** o Power BI deve mostrar. Po
 isso o próprio painel embute, ao final, a **consulta SQL de cada visual** — no
 Power BI, conecte-se ao mesmo Postgres do Supabase e reproduza cada um a partir
 dessas consultas (ou aponte direto para a view `vw_empenhos_classificados`).
+
+### Publicar o painel no Vercel
+
+O painel é um HTML estático autocontido em [`site/index.html`](site/index.html)
+(gerado a partir de `docs/dashboard-exemplo.html`). O `vercel.json` na raiz já
+deixa o deploy pronto — sem build, servindo a pasta `site/`. Passo a passo:
+
+1. Entre em [vercel.com](https://vercel.com) e faça login com a conta do GitHub.
+2. **Add New… → Project** e importe o repositório `GestaoFinBID`.
+3. Não precisa configurar nada (o `vercel.json` cuida disso) — clique em **Deploy**.
+4. Em ~1 minuto o Vercel te dá uma URL pública (ex.: `gestaofinbid.vercel.app`).
+
+A cada `git push` no branch, o Vercel republica sozinho. Como os dados ficam
+embutidos no HTML, para atualizar os números é só regenerar o painel e commitar
+o novo `site/index.html`.
