@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Painel de Empenhos — TJPE (exemplo)</title>
+<style>
+  :root{
+    --bg:#eef1f6; --panel:#ffffff; --panel-2:#f7f9fc; --border:#e0e6ef;
+    --ink:#12203a; --ink-2:#516079; --ink-3:#8b98ad;
+    --accent:#1f5fa8; --accent-soft:#e8f0fb;
+    --seq:#2a78d6; --seq-soft:#cfe1f9;
+    --cat-1:#2a78d6; --cat-2:#1baf7a; --cat-3:#eda100;
+    --good:#0f8a5f; --warn:#b9770a; --bad:#cf4139; --neutral:#8b98ad;
+    --shadow:0 1px 2px rgba(18,32,58,.06),0 8px 24px rgba(18,32,58,.05);
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0c1017; --panel:#141a23; --panel-2:#1a212c; --border:#26313f;
+      --ink:#eef2f8; --ink-2:#a7b4c7; --ink-3:#6a7789;
+      --accent:#4a90e0; --accent-soft:#17273c;
+      --seq:#3987e5; --seq-soft:#183254;
+      --cat-1:#3987e5; --cat-2:#199e70; --cat-3:#c98500;
+      --good:#1a9d6e; --warn:#c98500; --bad:#e0665f; --neutral:#6a7789;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f6; --panel:#ffffff; --panel-2:#f7f9fc; --border:#e0e6ef;
+    --ink:#12203a; --ink-2:#516079; --ink-3:#8b98ad;
+    --accent:#1f5fa8; --accent-soft:#e8f0fb; --seq:#2a78d6; --seq-soft:#cfe1f9;
+    --cat-1:#2a78d6; --cat-2:#1baf7a; --cat-3:#eda100;
+    --good:#0f8a5f; --warn:#b9770a; --bad:#cf4139; --neutral:#8b98ad;
+    --shadow:0 1px 2px rgba(18,32,58,.06),0 8px 24px rgba(18,32,58,.05);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1017; --panel:#141a23; --panel-2:#1a212c; --border:#26313f;
+    --ink:#eef2f8; --ink-2:#a7b4c7; --ink-3:#6a7789;
+    --accent:#4a90e0; --accent-soft:#17273c; --seq:#3987e5; --seq-soft:#183254;
+    --cat-1:#3987e5; --cat-2:#199e70; --cat-3:#c98500;
+    --good:#1a9d6e; --warn:#c98500; --bad:#e0665f; --neutral:#6a7789;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1160px;margin:0 auto;padding:22px 20px 60px}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  header.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;
+    justify-content:space-between;margin-bottom:20px}
+  .brand{display:flex;flex-direction:column;gap:3px}
+  .brand .eyebrow{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:700}
+  .brand h1{margin:0;font-size:23px;letter-spacing:-.01em;font-weight:700;text-wrap:balance}
+  .brand p{margin:0;color:var(--ink-2);font-size:13.5px}
+  .controls{display:flex;align-items:center;gap:14px}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--border);
+    border-radius:9px;padding:3px;box-shadow:var(--shadow)}
+  .seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;
+    font-weight:600;font-size:13.5px;padding:6px 15px;border-radius:6px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+  .asof{color:var(--ink-3);font-size:12px;text-align:right;line-height:1.35}
+
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:14px 15px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:7px}
+  .kpi .lbl{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .kpi .val{font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .kpi .sub{font-size:12px;color:var(--ink-2)}
+  .kpi.accent{background:linear-gradient(160deg,var(--accent-soft),var(--panel))}
+  .meter{height:6px;border-radius:4px;background:var(--border);overflow:hidden;margin-top:1px}
+  .meter i{display:block;height:100%;background:var(--accent);border-radius:4px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:15px 16px 12px;box-shadow:var(--shadow);min-width:0}
+  .card.wide{grid-column:1 / -1}
+  @media(min-width:760px){.card.two-thirds{grid-column:span 1}}
+  .card h2{margin:0 0 2px;font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+  .card .hint{margin:0 0 10px;color:var(--ink-3);font-size:12px}
+  .card .fig{width:100%}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  .statusrow{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+  .statusbar{height:12px;border-radius:6px;display:flex;overflow:hidden;background:var(--border)}
+  .statusbar i{height:100%}
+  .statuschips{display:flex;flex-direction:column;gap:7px}
+  .chip{display:flex;align-items:center;gap:9px;font-size:13px}
+  .chip .dot{width:9px;height:9px;border-radius:50%}
+  .chip .nm{color:var(--ink);font-weight:600}
+  .chip .ct{margin-left:auto;color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .chip .vl{color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:92px;text-align:right}
+
+  table.exy{width:100%;border-collapse:collapse;font-size:13px}
+  table.exy th,table.exy td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--border)}
+  table.exy th:first-child,table.exy td:first-child{text-align:left}
+  table.exy thead th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--ink-3);font-weight:600;border-bottom-color:var(--ink-3)}
+  table.exy td{font-variant-numeric:tabular-nums}
+  table.exy tr.cur td{background:var(--accent-soft);font-weight:600}
+
+  details.sql{margin-top:14px;background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  details.sql>summary{cursor:pointer;padding:14px 16px;font-weight:600;font-size:14px;
+    list-style:none;display:flex;align-items:center;gap:9px}
+  details.sql>summary::-webkit-details-marker{display:none}
+  details.sql>summary::before{content:"›";font-size:20px;color:var(--accent);
+    transition:transform .15s;line-height:0}
+  details.sql[open]>summary::before{transform:rotate(90deg)}
+  .sqlbody{padding:0 16px 16px;display:grid;gap:12px}
+  .sqlblock h3{margin:0 0 4px;font-size:12.5px;color:var(--ink-2);font-weight:700}
+  .sqlblock pre{margin:0;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:8px;padding:11px 13px;overflow-x:auto;font-family:var(--mono);
+    font-size:12px;line-height:1.5;color:var(--ink)}
+  .kw{color:var(--accent);font-weight:600}
+
+  footer.foot{margin-top:22px;color:var(--ink-3);font-size:12px;text-align:center;line-height:1.6}
+
+  .tt{position:fixed;pointer-events:none;z-index:50;background:var(--ink);color:var(--bg);
+    padding:7px 10px;border-radius:7px;font-size:12px;line-height:1.4;box-shadow:var(--shadow);
+    opacity:0;transition:opacity .1s;max-width:260px}
+  .tt b{color:var(--bg)}
+  svg{display:block;overflow:visible}
+  svg text{font-family:var(--sans)}
+  .barlabel{font-variant-numeric:tabular-nums}
+  @media (max-width:820px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+    .card.two-thirds{grid-column:1 / -1}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">TJPE · Execução Orçamentária</div>
+      <h1>Painel de Empenhos — exemplo</h1>
+      <p>Dados reais do e-Fisco carregados no Supabase · mockup de referência para o Power BI</p>
+    </div>
+    <div class="controls">
+      <div class="seg" id="yearseg" role="group" aria-label="Exercício"></div>
+      <div class="asof">dados até<br><b id="asof">—</b></div>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Indicadores"></section>
+
+  <div class="grid">
+    <section class="card wide">
+      <h2>Pagamentos por mês</h2>
+      <p class="hint">Ordens bancárias pagas, por mês de emissão</p>
+      <div class="fig" id="fig-meses"></div>
+    </section>
+
+    <section class="card">
+      <h2>Execução por etapa</h2>
+      <p class="hint">Do empenhado ao efetivamente pago</p>
+      <div class="fig" id="fig-funil"></div>
+    </section>
+    <section class="card">
+      <h2>Por fonte de recurso</h2>
+      <p class="hint">Valor empenhado por fonte</p>
+      <div class="fig" id="fig-fonte"></div>
+      <div class="legend" id="leg-fonte"></div>
+    </section>
+
+    <section class="card wide">
+      <h2>Empenhado por setor / ação</h2>
+      <p class="hint">Classificação vinda da planilha de Ações/Subações · “Não classificado” = subação com vários setores</p>
+      <div class="fig" id="fig-setor"></div>
+    </section>
+
+    <section class="card two-thirds">
+      <h2>Maiores credores</h2>
+      <p class="hint">Por valor pago no exercício</p>
+      <div class="fig" id="fig-credores"></div>
+    </section>
+    <section class="card">
+      <h2>Situação das ordens bancárias</h2>
+      <p class="hint">Todas as OB do exercício, por status</p>
+      <div class="statusrow" id="fig-status"></div>
+    </section>
+
+    <section class="card wide">
+      <h2>Resumo por exercício</h2>
+      <p class="hint">Acumulado na base — cada ano vai crescendo conforme os zips diários são carregados</p>
+      <div style="overflow-x:auto"><table class="exy" id="tbl-exy"></table></div>
+    </section>
+  </div>
+
+  <details class="sql">
+    <summary>Consultas SQL de cada painel — blueprint para o Power BI</summary>
+    <div class="sqlbody" id="sqlbody"></div>
+  </details>
+
+  <footer class="foot">
+    Painel de exemplo gerado a partir da base <b>GestaoFinBID</b> (Supabase/PostgreSQL).
+    No Power BI, conecte-se ao mesmo banco e reproduza cada visual com as consultas acima.<br>
+    Valores em reais · classificação por setor conforme a planilha de Ações/Subações.
+  </footer>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+const DATA = {"anos": [2025, 2026], "gerado": "2026-07-10", "por_exercicio": [{"exercicio": 2024, "empenhos": 1264, "empenhado": 2427128919.43, "liquidado": 2799702771.43, "pago": 2670474227.68}, {"exercicio": 2025, "empenhos": 3415, "empenhado": 3151761377.78, "liquidado": 3129696650.71, "pago": 3012509909.86}, {"exercicio": 2026, "empenhos": 1461, "empenhado": 2267270231.95, "liquidado": 1427511208.56, "pago": 1417578961.28}], "anos_detalhe": {"2025": {"kpi": {"empenhos": 3415, "empenhado": 3151761377.78, "liquidado": 3129696650.71, "pago": 3012509909.86}, "contagens": {"liquidacoes": 15002, "ordens": 29729, "retencoes": 11487}, "por_setor": [{"setor": "Remuneração de Magistrados e Servidores", "empenhado": 1855609963.78, "n": 138}, {"setor": "Contribuições Patronais do PJPE ao FUNAFIN", "empenhado": 328295144.33, "n": 10}, {"setor": "Benefícios para Magistrados e Servidores", "empenhado": 315459859.17, "n": 127}, {"setor": "Não classificado", "empenhado": 294037394.92, "n": 1682}, {"setor": "MELHORIA DA INFRAESTRUTURA E GOVERNANÇA DE TIC", "empenhado": 117526142.91, "n": 209}, {"setor": "Remuneração de Magistrados e Servidores - FERM", "empenhado": 115842713.67, "n": 14}, {"setor": "EXECUÇÃO DO PLANO DE OBRAS DO PJPE", "empenhado": 52161777.63, "n": 160}, {"setor": "Encargos com Pessoal Contratados e Comissionados", "empenhado": 14198414.78, "n": 75}, {"setor": "Contribuições Patronais do PJPE ao FUNAPREV", "empenhado": 13679000.0, "n": 7}, {"setor": "Escola Judicial", "empenhado": 8626805.4, "n": 132}, {"setor": "Contribuições Patronais ao SASSEPE", "empenhado": 8497750.86, "n": 3}, {"setor": "MELHORIA DA GESTÃO DE PESSOAS", "empenhado": 7321269.08, "n": 77}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DO 1º E 2º GRAUS", "empenhado": 6426514.32, "n": 90}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DOS JUIZADOS ESPECIAIS", "empenhado": 6079621.98, "n": 148}, {"setor": "Prestação Jurisdicional-  1º E 2º GRAUS", "empenhado": 5040670.31, "n": 502}, {"setor": "Gestão de Atividades TJPE", "empenhado": 1350000.0, "n": 2}, {"setor": "Contribuição Patronal da Previdência Complementar", "empenhado": 980000.0, "n": 1}, {"setor": "Coordenadoria da Infância e Juventude", "empenhado": 296844.16, "n": 24}, {"setor": "Coordenadoria da Mulher", "empenhado": 242490.48, "n": 8}, {"setor": "Prestação Jurisdicional - Juizados Especiais", "empenhado": 89000.0, "n": 6}], "por_fonte": [{"fonte": "0500", "empenhado": 2556211002.85, "n": 396}, {"fonte": "0759", "empenhado": 593748574.93, "n": 3017}, {"fonte": "0754", "empenhado": 1801800.0, "n": 2}], "pagamentos_mes": [{"mes": "2025-01", "pago": 180954622.72, "n": 1208}, {"mes": "2025-02", "pago": 164206103.33, "n": 1913}, {"mes": "2025-03", "pago": 185781793.47, "n": 2005}, {"mes": "2025-04", "pago": 180707061.15, "n": 2410}, {"mes": "2025-05", "pago": 175294228.66, "n": 2415}, {"mes": "2025-06", "pago": 156426114.47, "n": 1903}, {"mes": "2025-07", "pago": 220071335.75, "n": 2231}, {"mes": "2025-08", "pago": 216698540.65, "n": 3044}, {"mes": "2025-09", "pago": 176258897.14, "n": 3131}, {"mes": "2025-10", "pago": 218318697.24, "n": 3045}, {"mes": "2025-11", "pago": 240782349.91, "n": 3120}, {"mes": "2025-12", "pago": 538158429.24, "n": 2856}], "top_credores": [{"credor": "FOLHA DE PAGAMENTO DO TRIBUNAL DE JUSTICA", "pago": 2271774003.34, "n": 130}, {"credor": "FUNDO FINANCEIRO DE APOSENTADORIAS E PENSOES DOS SERVIDORES DO ESTADO DE PERNAMBUCO", "pago": 352883391.1, "n": 10}, {"credor": "LIDERANCA LIMPEZA E CONSERVACAO LTDA", "pago": 38118199.16, "n": 17}, {"credor": "RM TERCEIRIZACAO E GESTAO DE RECURSOS HUMANOS LTDA", "pago": 26456265.81, "n": 21}, {"credor": "R.P.L ENGENHARIA E SERVICOS LTDA EM RECUPERACAO JUDICIAL", "pago": 23114752.31, "n": 9}, {"credor": "TELTEX TECNOLOGIA S.A", "pago": 20361212.44, "n": 33}, {"credor": "SECRETARIA DE DEFESA SOCIAL", "pago": 14898300.0, "n": 3}, {"credor": "INSTITUTO NACIONAL DO SEGURO SOCIAL", "pago": 13142812.82, "n": 33}], "status_ob": [{"status": "PAGA", "n": 29281, "valor": 2653658173.73}, {"status": "ENVIADA", "n": 301, "valor": 4297374.03}, {"status": "DEVOLVIDA", "n": 144, "valor": 693516.71}, {"status": "DEVOLVIDA PÓS PAGAMENTO", "n": 2, "valor": 7903.34}, {"status": "AJUSTADA", "n": 1, "valor": 1532189.48}]}, "2026": {"kpi": {"empenhos": 1461, "empenhado": 2267270231.95, "liquidado": 1427511208.56, "pago": 1417578961.28}, "contagens": {"liquidacoes": 4615, "ordens": 14150, "retencoes": 5337}, "por_setor": [{"setor": "Remuneração de Magistrados e Servidores", "empenhado": 1282745440.54, "n": 48}, {"setor": "Benefícios para Magistrados e Servidores", "empenhado": 264762870.32, "n": 46}, {"setor": "Contribuições Patronais do PJPE ao FUNAFIN", "empenhado": 260900000.0, "n": 2}, {"setor": "Não classificado", "empenhado": 159558583.24, "n": 731}, {"setor": "MELHORIA DA INFRAESTRUTURA E GOVERNANÇA DE TIC", "empenhado": 106130146.85, "n": 123}, {"setor": "Remuneração de Magistrados e Servidores - FERM", "empenhado": 96000000.0, "n": 1}, {"setor": "EXECUÇÃO DO PLANO DE OBRAS DO PJPE", "empenhado": 34039571.29, "n": 64}, {"setor": "MELHORIA DA GESTÃO DE PESSOAS", "empenhado": 18367752.32, "n": 29}, {"setor": "Encargos com Pessoal Contratados e Comissionados", "empenhado": 10216331.58, "n": 22}, {"setor": "Contribuições Patronais do PJPE ao FUNAPREV", "empenhado": 10130000.0, "n": 3}, {"setor": "Contribuições Patronais ao SASSEPE", "empenhado": 7000000.0, "n": 1}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DOS JUIZADOS ESPECIAIS", "empenhado": 5060812.69, "n": 75}, {"setor": "SUPORTE ÀS ATIVIDADES FINS DO 1º E 2º GRAUS", "empenhado": 4218700.6, "n": 36}, {"setor": "Escola Judicial", "empenhado": 3281477.14, "n": 34}, {"setor": "Prestação Jurisdicional-  1º E 2º GRAUS", "empenhado": 2528747.38, "n": 232}, {"setor": "Gestão de Atividades TJPE", "empenhado": 1300000.0, "n": 1}, {"setor": "Contribuição Patronal da Previdência Complementar", "empenhado": 802000.0, "n": 3}, {"setor": "Coordenadoria da Infância e Juventude", "empenhado": 154418.0, "n": 7}, {"setor": "Coordenadoria da Mulher", "empenhado": 37380.0, "n": 2}, {"setor": "Prestação Jurisdicional - Juizados Especiais", "empenhado": 36000.0, "n": 1}], "por_fonte": [{"fonte": "0500", "empenhado": 1838313429.72, "n": 132}, {"fonte": "0759", "empenhado": 428497935.57, "n": 1324}, {"fonte": "0754", "empenhado": 458866.66, "n": 5}], "pagamentos_mes": [{"mes": "2026-01", "pago": 192329164.88, "n": 1764}, {"mes": "2026-02", "pago": 126536224.65, "n": 1629}, {"mes": "2026-03", "pago": 207714085.39, "n": 2226}, {"mes": "2026-04", "pago": 204730819.18, "n": 2926}, {"mes": "2026-05", "pago": 163547113.47, "n": 2750}, {"mes": "2026-06", "pago": 171866837.68, "n": 2320}, {"mes": "2026-07", "pago": 44957173.6, "n": 240}], "top_credores": [{"credor": "FOLHA DE PAGAMENTO DO TRIBUNAL DE JUSTICA", "pago": 1099568456.77, "n": 32}, {"credor": "FUNDO FINANCEIRO DE APOSENTADORIAS E PENSOES DOS SERVIDORES DO ESTADO DE PERNAMBUCO", "pago": 159310758.21, "n": 2}, {"credor": "LIDERANCA LIMPEZA E CONSERVACAO LTDA", "pago": 12774835.08, "n": 12}, {"credor": "RM TERCEIRIZACAO E GESTAO DE RECURSOS HUMANOS LTDA", "pago": 10408471.44, "n": 4}, {"credor": "R.P.L ENGENHARIA E SERVICOS LTDA EM RECUPERACAO JUDICIAL", "pago": 9350963.87, "n": 3}, {"credor": "SERVICO FEDERAL DE PROCESSAMENTO DE DADOS (SERPRO)", "pago": 7240045.53, "n": 8}, {"credor": "SECRETARIA DE DEFESA SOCIAL", "pago": 7041400.0, "n": 1}, {"credor": "CONSELHO NACIONAL DE JUSTICA", "pago": 6906099.16, "n": 1}], "status_ob": [{"status": "PAGA", "n": 13855, "valor": 1111681418.85}, {"status": "ENVIADA", "n": 184, "valor": 462747.08}, {"status": "DEVOLVIDA", "n": 110, "valor": 11396206.64}, {"status": "AJUSTADA", "n": 1, "valor": 445.0}]}}};
+
+const NS="http://www.w3.org/2000/svg";
+const brl0=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const numf=new Intl.NumberFormat('pt-BR');
+function compact(v){const a=Math.abs(v);
+  if(a>=1e9)return 'R$ '+(v/1e9).toLocaleString('pt-BR',{maximumFractionDigits:2})+' bi';
+  if(a>=1e6)return 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';
+  if(a>=1e3)return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil';
+  return brl0.format(v);}
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+function mesLabel(s){const m=+s.slice(5,7);return MES[m-1]+'/'+s.slice(2,4);}
+function el(tag,attrs){const e=document.createElementNS(NS,tag);
+  for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+const tt=document.getElementById('tt');
+function showTT(html,x,y){tt.innerHTML=html;tt.style.opacity=1;
+  const r=tt.getBoundingClientRect();let nx=x+14,ny=y+14;
+  if(nx+r.width>innerWidth-8)nx=x-r.width-14;
+  if(ny+r.height>innerHeight-8)ny=y-r.height-14;
+  tt.style.left=nx+'px';tt.style.top=ny+'px';}
+function hideTT(){tt.style.opacity=0;}
+
+let YEAR=String(DATA.anos[DATA.anos.length-1]);
+
+/* ---------- horizontal bars (single hue) ---------- */
+function hbars(host,items,{value,label,sub,color,max,fmt}){
+  host.innerHTML='';fmt=fmt||compact;
+  const W=host.clientWidth||600, rh=34, padL=0, padR=0, top=4;
+  const H=top+items.length*rh+4;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',height:H,role:'img'});
+  const mx=max||Math.max(...items.map(value),1);
+  const labelW=Math.min(230,Math.max(120,W*0.32));
+  const barX=labelW+8, barW=Math.max(60,W-barX-96);
+  items.forEach((it,i)=>{
+    const y=top+i*rh, v=value(it), w=Math.max(2,barW*v/mx);
+    const cbg=el('rect',{x:barX,y:y+rh/2-6,width:barW,height:12,rx:6,fill:'var(--border)','opacity':.5});
+    svg.appendChild(cbg);
+    const bar=el('rect',{x:barX,y:y+rh/2-6,width:w,height:12,rx:6,fill:color(it,i)});
+    svg.appendChild(bar);
+    const lt=el('text',{x:0,y:y+rh/2+4,'font-size':12.5,fill:'var(--ink)','font-weight':600});
+    lt.textContent=label(it);
+    // truncate label to labelW
+    lt.setAttribute('data-full',label(it));
+    svg.appendChild(lt);
+    const vt=el('text',{x:W,y:y+rh/2+4,'font-size':12.5,'text-anchor':'end',
+      fill:'var(--ink-2)','class':'barlabel'});
+    vt.textContent=fmt(v);
+    svg.appendChild(vt);
+    const hit=el('rect',{x:0,y:y,width:W,height:rh,fill:'transparent'});
+    hit.addEventListener('mousemove',e=>showTT(
+      `<b>${label(it)}</b><br>${fmt(v)}${sub?'<br>'+sub(it):''}`,e.clientX,e.clientY));
+    hit.addEventListener('mouseleave',hideTT);
+    svg.appendChild(hit);
+  });
+  host.appendChild(svg);
+  // clip long labels
+  svg.querySelectorAll('text[data-full]').forEach(t=>{
+    let s=t.getAttribute('data-full');
+    while(t.getComputedTextLength()>labelW && s.length>4){s=s.slice(0,-1);t.textContent=s.trim()+'…';}
+  });
+}
+
+/* ---------- funnel (3 stages, single accent) ---------- */
+function funnel(host,k){
+  const items=[
+    {n:'Empenhado',v:k.empenhado},
+    {n:'Liquidado',v:k.liquidado},
+    {n:'Pago',v:k.pago}];
+  const base=k.empenhado||1;
+  hbars(host,items,{value:d=>d.v,label:d=>d.n,color:()=> 'var(--seq)',max:base,
+    sub:d=>((d.v/base*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'% do empenhado')});
+}
+
+/* ---------- donut (categorical, direct labels) ---------- */
+function donut(host,leg,items){
+  host.innerHTML='';leg.innerHTML='';
+  const W=host.clientWidth||360,H=190,cx=W*0.32,cy=H/2,r=64,rin=40;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',height:H});
+  const total=items.reduce((s,d)=>s+d.v,0)||1;
+  const cols=['var(--cat-1)','var(--cat-2)','var(--cat-3)','var(--neutral)'];
+  let a0=-Math.PI/2;
+  items.forEach((d,i)=>{
+    const frac=d.v/total,a1=a0+frac*2*Math.PI;
+    const large=frac>0.5?1:0;
+    const p=el('path',{d:arc(cx,cy,r,rin,a0,a1,large),fill:cols[i%cols.length],
+      stroke:'var(--panel)','stroke-width':2});
+    p.addEventListener('mousemove',e=>showTT(
+      `<b>${d.nm}</b><br>${compact(d.v)} · ${(frac*100).toLocaleString('pt-BR',{maximumFractionDigits:1})}%<br>${numf.format(d.n)} empenhos`,e.clientX,e.clientY));
+    p.addEventListener('mouseleave',hideTT);
+    svg.appendChild(p);
+    a0=a1;
+  });
+  const t1=el('text',{x:cx,y:cy-3,'text-anchor':'middle','font-size':11,fill:'var(--ink-3)'});
+  t1.textContent='total';
+  const t2=el('text',{x:cx,y:cy+14,'text-anchor':'middle','font-size':14,'font-weight':700,fill:'var(--ink)'});
+  t2.textContent=compact(total);
+  svg.appendChild(t1);svg.appendChild(t2);
+  host.appendChild(svg);
+  items.forEach((d,i)=>{
+    const s=document.createElement('span');
+    s.innerHTML=`<i style="background:${cols[i%cols.length]}"></i>${d.nm} · <b class="tnum">&nbsp;${(d.v/total*100).toLocaleString('pt-BR',{maximumFractionDigits:0})}%</b>`;
+    leg.appendChild(s);
+  });
+}
+function arc(cx,cy,r,rin,a0,a1,large){
+  const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1);
+  const xi1=cx+rin*Math.cos(a1),yi1=cy+rin*Math.sin(a1),xi0=cx+rin*Math.cos(a0),yi0=cy+rin*Math.sin(a0);
+  return `M${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} L${xi1} ${yi1} A${rin} ${rin} 0 ${large} 0 ${xi0} ${yi0} Z`;
+}
+
+/* ---------- area + line (monthly) ---------- */
+function area(host,pts){
+  host.innerHTML='';
+  const W=host.clientWidth||600,H=200,padL=52,padR=14,padT=12,padB=26;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',height:H});
+  const mx=Math.max(...pts.map(p=>p.pago),1);
+  const iw=W-padL-padR,ih=H-padT-padB;
+  const X=i=>padL+(pts.length<=1?iw/2:iw*i/(pts.length-1));
+  const Y=v=>padT+ih-ih*v/mx;
+  // gridlines
+  for(let g=0;g<=3;g++){const v=mx*g/3,y=Y(v);
+    svg.appendChild(el('line',{x1:padL,y1:y,x2:W-padR,y2:y,stroke:'var(--border)','stroke-width':1}));
+    const t=el('text',{x:padL-8,y:y+4,'text-anchor':'end','font-size':10.5,fill:'var(--ink-3)'});
+    t.textContent=compact(v).replace('R$ ','');svg.appendChild(t);
+  }
+  let dl=`M${X(0)} ${Y(pts[0].pago)}`,al=`M${X(0)} ${Y(0)} L${X(0)} ${Y(pts[0].pago)}`;
+  pts.forEach((p,i)=>{if(i){dl+=` L${X(i)} ${Y(p.pago)}`;al+=` L${X(i)} ${Y(p.pago)}`;}});
+  al+=` L${X(pts.length-1)} ${Y(0)} Z`;
+  const grad='g'+Math.random().toString(36).slice(2);
+  const defs=el('defs',{});const lg=el('linearGradient',{id:grad,x1:0,y1:0,x2:0,y2:1});
+  lg.appendChild(el('stop',{offset:'0%','stop-color':'var(--seq)','stop-opacity':.28}));
+  lg.appendChild(el('stop',{offset:'100%','stop-color':'var(--seq)','stop-opacity':0}));
+  defs.appendChild(lg);svg.appendChild(defs);
+  svg.appendChild(el('path',{d:al,fill:`url(#${grad})`}));
+  svg.appendChild(el('path',{d:dl,fill:'none',stroke:'var(--seq)','stroke-width':2.2,
+    'stroke-linejoin':'round','stroke-linecap':'round'}));
+  pts.forEach((p,i)=>{
+    const last=i===pts.length-1;
+    svg.appendChild(el('circle',{cx:X(i),cy:Y(p.pago),r:last?4:3,fill:'var(--seq)',
+      stroke:'var(--panel)','stroke-width':1.5}));
+    const t=el('text',{x:X(i),y:H-8,'text-anchor':'middle','font-size':10.5,fill:'var(--ink-3)'});
+    t.textContent=mesLabel(p.mes);svg.appendChild(t);
+  });
+  // hover
+  const hover=el('line',{x1:0,y1:padT,x2:0,y2:padT+ih,stroke:'var(--accent)','stroke-width':1,opacity:0});
+  svg.appendChild(hover);
+  const hit=el('rect',{x:padL,y:0,width:iw,height:H,fill:'transparent'});
+  hit.addEventListener('mousemove',e=>{
+    const rect=svg.getBoundingClientRect(),sx=(e.clientX-rect.left)*W/rect.width;
+    let i=Math.round((sx-padL)/(iw/(pts.length-1||1)));i=Math.max(0,Math.min(pts.length-1,i));
+    const p=pts[i];hover.setAttribute('x1',X(i));hover.setAttribute('x2',X(i));hover.setAttribute('opacity',1);
+    showTT(`<b>${mesLabel(p.mes)}</b><br>${compact(p.pago)}<br>${numf.format(p.n)} ordens`,e.clientX,e.clientY);
+  });
+  hit.addEventListener('mouseleave',()=>{hover.setAttribute('opacity',0);hideTT();});
+  svg.appendChild(hit);
+  host.appendChild(svg);
+}
+
+/* ---------- status ---------- */
+function statusView(host,items){
+  host.innerHTML='';
+  const map={'PAGA':'var(--good)','ENVIADA':'var(--warn)','DEVOLVIDA':'var(--bad)',
+    'DEVOLVIDA PÓS PAGAMENTO':'var(--bad)','AJUSTADA':'var(--neutral)'};
+  const tot=items.reduce((s,d)=>s+d.n,0)||1;
+  const bar=document.createElement('div');bar.className='statusbar';
+  items.forEach(d=>{const i=document.createElement('i');
+    i.style.background=map[d.status]||'var(--neutral)';i.style.width=(d.n/tot*100)+'%';
+    i.title=d.status;bar.appendChild(i);});
+  host.appendChild(bar);
+  const chips=document.createElement('div');chips.className='statuschips';
+  items.forEach(d=>{const c=document.createElement('div');c.className='chip';
+    c.innerHTML=`<span class="dot" style="background:${map[d.status]||'var(--neutral)'}"></span>`+
+      `<span class="nm">${d.status.charAt(0)+d.status.slice(1).toLowerCase()}</span>`+
+      `<span class="ct tnum">${numf.format(d.n)}</span>`+
+      `<span class="vl">${compact(d.valor)}</span>`;
+    chips.appendChild(c);});
+  host.appendChild(chips);
+}
+
+/* ---------- KPIs ---------- */
+function kpis(host,k){
+  const exec=k.empenhado?k.pago/k.empenhado*100:0;
+  host.innerHTML='';
+  const tiles=[
+    {lbl:'Empenhado',val:compact(k.empenhado),sub:numf.format(k.empenhos)+' empenhos'},
+    {lbl:'Liquidado',val:compact(k.liquidado),sub:(k.empenhado?(k.liquidado/k.empenhado*100).toFixed(0):0)+'% do empenhado'},
+    {lbl:'Pago',val:compact(k.pago),sub:(k.empenhado?(k.pago/k.empenhado*100).toFixed(0):0)+'% do empenhado'},
+    {lbl:'% Executado',val:exec.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%',
+      sub:'pago ÷ empenhado',meter:Math.min(100,exec),accent:true},
+    {lbl:'Empenhos',val:numf.format(k.empenhos),sub:'notas no exercício'},
+  ];
+  tiles.forEach(t=>{const d=document.createElement('div');d.className='kpi'+(t.accent?' accent':'');
+    d.innerHTML=`<div class="lbl">${t.lbl}</div><div class="val tnum">${t.val}</div>`+
+      (t.meter!==undefined?`<div class="meter"><i style="width:${t.meter}%"></i></div>`:'')+
+      `<div class="sub">${t.sub}</div>`;
+    host.appendChild(d);});
+}
+
+/* ---------- exercicio table ---------- */
+function exyTable(){
+  const t=document.getElementById('tbl-exy');
+  t.innerHTML='<thead><tr><th>Exercício</th><th>Empenhos</th><th>Empenhado</th>'+
+    '<th>Liquidado</th><th>Pago</th><th>% Exec.</th></tr></thead><tbody>'+
+    DATA.por_exercicio.map(r=>{const ex=r.empenhado?r.pago/r.empenhado*100:0;
+      return `<tr class="${String(r.exercicio)===YEAR?'cur':''}"><td>${r.exercicio}</td>`+
+        `<td>${numf.format(r.empenhos)}</td><td>${compact(r.empenhado)}</td>`+
+        `<td>${compact(r.liquidado)}</td><td>${compact(r.pago)}</td>`+
+        `<td>${ex.toLocaleString('pt-BR',{maximumFractionDigits:1})}%</td></tr>`;}).join('')+
+    '</tbody>';
+}
+
+const FONTE_NOME={'0500':'Recursos Ordinários','0759':'FERM / FUNSEG','0754':'BID'};
+
+function render(){
+  const d=DATA.anos_detalhe[YEAR];
+  document.getElementById('asof').textContent=(YEAR===String(DATA.anos[DATA.anos.length-1]))?DATA.gerado.split('-').reverse().join('/'):('exercício '+YEAR);
+  kpis(document.getElementById('kpis'),d.kpi);
+  area(document.getElementById('fig-meses'),d.pagamentos_mes);
+  funnel(document.getElementById('fig-funil'),d.kpi);
+  donut(document.getElementById('fig-fonte'),document.getElementById('leg-fonte'),
+    d.por_fonte.map(f=>({nm:FONTE_NOME[f.fonte]||f.fonte,v:f.empenhado,n:f.n})));
+  const setores=d.por_setor.slice(0,11);
+  hbars(document.getElementById('fig-setor'),setores,{
+    value:s=>s.empenhado,label:s=>s.setor,
+    color:s=>s.setor==='Não classificado'?'var(--neutral)':'var(--seq)',
+    sub:s=>numf.format(s.n)+' empenhos'});
+  hbars(document.getElementById('fig-credores'),d.top_credores,{
+    value:c=>c.pago,label:c=>c.credor,color:()=> 'var(--seq)',
+    sub:c=>numf.format(c.n)+' empenhos'});
+  statusView(document.getElementById('fig-status'),d.status_ob);
+  exyTable();
+  paintSQL();
+}
+
+/* year segmented control */
+const seg=document.getElementById('yearseg');
+DATA.anos.forEach(y=>{const b=document.createElement('button');b.textContent=y;
+  b.setAttribute('aria-pressed',String(y)===YEAR);
+  b.onclick=()=>{YEAR=String(y);[...seg.children].forEach(c=>c.setAttribute('aria-pressed',c.textContent===YEAR));render();};
+  seg.appendChild(b);});
+
+/* SQL blueprint (acompanha o ano selecionado) */
+function sqlFor(y){return [
+ ['KPIs / Execução','select count(*), sum(valor) empenhado,\n       sum(valor_liquidado) liquidado, sum(valor_pago) pago\nfrom empenhos where exercicio = '+y+';'],
+ ['Pagamentos por mês','select to_char(data_emissao,\'YYYY-MM\') mes,\n       sum(valor) pago, count(*) n\nfrom ordens_bancarias\nwhere upper(status)=\'PAGA\'\n  and extract(year from data_emissao)= '+y+'\ngroup by 1 order by 1;'],
+ ['Empenhado por setor','select setor, sum(valor) empenhado, count(*) n\nfrom vw_empenhos_classificados\nwhere exercicio = '+y+'\ngroup by setor order by empenhado desc nulls last;'],
+ ['Por fonte de recurso','select fonte_codigo, sum(valor) empenhado, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by fonte_codigo order by empenhado desc;'],
+ ['Maiores credores','select credor_nome, sum(valor_pago) pago, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by credor_nome order by pago desc nulls last limit 8;'],
+ ['Situação das OB','select upper(status) status, count(*) n, sum(valor) valor\nfrom ordens_bancarias\nwhere extract(year from data_emissao)= '+y+'\ngroup by 1 order by n desc;'],
+];}
+function paintSQL(){
+  const kw=/\b(select|from|where|group by|order by|sum|count|and|as|limit|nulls last|extract|to_char|upper|desc)\b/gi;
+  document.getElementById('sqlbody').innerHTML=sqlFor(YEAR).map(([t,q])=>
+    `<div class="sqlblock"><h3>${t}</h3><pre>${q.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(kw,m=>'<span class="kw">'+m+'</span>')}</pre></div>`).join('');
+}
+
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(render,150);});
+render();
+</script>
+
+</body>
+</html>

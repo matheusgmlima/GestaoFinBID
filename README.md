@@ -136,3 +136,16 @@ group by setor order by 3 desc;
 As tabelas têm RLS habilitado sem policies: só o *service role* (e a conexão
 direta usada pela carga) acessa. Para liberar leitura no app/dashboard, crie
 policies de `select`.
+
+## Dashboard de exemplo (referência para o Power BI)
+
+Um painel de demonstração, com dados reais da base, está em
+[`docs/dashboard-exemplo.html`](docs/dashboard-exemplo.html) — abra o arquivo
+no navegador. Ele traz KPIs de execução (empenhado/liquidado/pago),
+pagamentos por mês, empenhado por setor, por fonte, maiores credores e
+situação das ordens bancárias, com filtro por exercício.
+
+Não é o painel final: serve para alinhar **o que** o Power BI deve mostrar. Por
+isso o próprio painel embute, ao final, a **consulta SQL de cada visual** — no
+Power BI, conecte-se ao mesmo Postgres do Supabase e reproduza cada um a partir
+dessas consultas (ou aponte direto para a view `vw_empenhos_classificados`).
