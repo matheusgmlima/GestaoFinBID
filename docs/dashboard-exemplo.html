@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-<title>Painel de Empenhos — TJPE (exemplo)</title>
+<title>Painel de Empenhos — TJPE</title>
 <style>
   :root{
     --bg:#eef1f6; --panel:#ffffff; --panel-2:#f7f9fc; --border:#e0e6ef;
@@ -128,8 +128,7 @@
   <header class="top">
     <div class="brand">
       <div class="eyebrow">TJPE · Execução Orçamentária</div>
-      <h1>Painel de Empenhos — exemplo</h1>
-      <p>Dados reais do e-Fisco no Supabase · todas as tabelas cruzadas · referência para o Power BI</p>
+      <h1>Painel de Empenhos</h1>
     </div>
     <div class="controls">
       <div class="seg" id="yearseg" role="group" aria-label="Exercício"></div>
@@ -224,16 +223,6 @@
     </section>
   </div>
 
-  <details class="sql">
-    <summary>Consultas SQL de cada painel — blueprint para o Power BI</summary>
-    <div class="sqlbody" id="sqlbody"></div>
-  </details>
-
-  <footer class="foot">
-    Painel de exemplo gerado da base <b>GestaoFinBID</b> (Supabase/PostgreSQL) — empenhos, itens, cronograma,
-    liquidações, ordens bancárias, retenções e classificação, todos cruzados.<br>
-    No Power BI, conecte-se ao mesmo banco e reproduza cada visual com as consultas acima. Valores em reais.
-  </footer>
 </div>
 <div class="tt" id="tt"></div>
 
@@ -422,23 +411,8 @@ function render(){
     [{nm:'Empenhos anulados',n:k.anul_emp_n,v:k.anulado_emp,c:'var(--bad)'},
      {nm:'Liquidações anuladas',n:k.anul_liq_n,v:k.anulado_liq,c:'var(--warn)'}],
     {color:x=>x.c,label:x=>x.nm,ct:x=>numf.format(x.n)+'×',val:x=>compact(x.v)});
-  exyTable();paintSQL();
+  exyTable();
 }
-function sqlFor(y){return [
- ['KPIs de execução','select count(*), sum(valor) empenhado,\n       sum(valor_liquidado) liquidado, sum(valor_pago) pago\nfrom empenhos where exercicio = '+y+';'],
- ['Previsto × Pago','-- previsto\nselect mes, sum(valor) from empenho_cronograma\nwhere numero_ne like \''+y+'NE%\' group by mes;\n-- pago\nselect extract(month from data_emissao) mes, sum(valor)\nfrom ordens_bancarias where upper(status)=\'PAGA\'\n and extract(year from data_emissao)= '+y+' group by 1;'],
- ['Ciclo NE→LE→OB','select count(*) empenhos,\n count(*) filter (where exists (select 1 from liquidacoes l\n   where l.numero_ne=e.numero_ne and l.unidade_gestora=e.unidade_gestora)) com_liquidacao,\n count(*) filter (where exists (select 1 from ordens_bancarias o\n   where o.numero_ne=e.numero_ne and o.unidade_gestora=e.unidade_gestora\n   and upper(o.status)=\'PAGA\')) com_pagamento\nfrom empenhos e where exercicio = '+y+';'],
- ['Empenhado por setor','select setor, sum(valor) empenhado, sum(valor_pago) pago, count(*) n\nfrom vw_empenhos_classificados where exercicio = '+y+'\ngroup by setor order by empenhado desc nulls last;'],
- ['Grupo de natureza','select substr(natureza_despesa,1,2) gnd,\n       sum(valor) empenhado, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by 1 order by empenhado desc;'],
- ['Elemento de despesa','select substr(natureza_despesa,5,2) elemento,\n       sum(valor) empenhado, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by 1 order by empenhado desc limit 10;'],
- ['Maiores credores','select credor_nome, sum(valor_pago) pago, count(*) n\nfrom empenhos where exercicio = '+y+'\ngroup by 1 order by pago desc nulls last limit 10;'],
- ['Itens de despesa','select trim(descricao) item, sum(valor_total) valor, count(*) n\nfrom empenho_itens where numero_ne like \''+y+'NE%\'\n and natureza_subitem not like \'319%\'\ngroup by 1 order by valor desc limit 10;'],
- ['Retenções por tributo','select case when tipo like \'INSS%\' then \'INSS\'\n  when tipo like \'IRRF%\' then \'IRRF\'\n  when tipo like \'ISS%\' then \'ISS\' else \'Outros\' end tributo,\n  sum(valor) valor, count(*) n\nfrom retencoes where numero_rn like \''+y+'RN%\' group by 1;'],
- ['Anulações','select count(*), sum(valor) from empenho_anulacoes\nwhere numero_na like \''+y+'NA%\';   -- e liquidacao_anulacoes (AL)'],
-];}
-function paintSQL(){const kw=/\b(select|from|where|group by|order by|sum|count|and|as|limit|nulls last|not like|like|filter|exists|extract|substr|trim|upper|desc|case|when|then|else|end)\b/gi;
-  document.getElementById('sqlbody').innerHTML=sqlFor(YEAR).map(([t,q])=>
-    `<div class="sqlblock"><h3>${t}</h3><pre>${q.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(kw,m=>'<span class="kw">'+m+'</span>')}</pre></div>`).join('');}
 
 const seg=document.getElementById('yearseg');
 DATA.anos.forEach(y=>{const b=document.createElement('button');b.textContent=y;b.setAttribute('aria-pressed',String(y)===YEAR);
